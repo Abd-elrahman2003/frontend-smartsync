@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "smart_sync",
   "version": "0.1.0",
   "private": true,
@@ -31,6 +32,19 @@
     "sweetalert2": "^11.14.5",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5"
+=======
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
+>>>>>>> 88f174cd8877f6a867e8e1c368b681b4ee948119
   },
   "scripts": {
     "start": "react-scripts start",
@@ -55,8 +69,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+<<<<<<< HEAD
   },
   "devDependencies": {
     "tailwindcss": "^3.4.14"
+=======
+>>>>>>> 88f174cd8877f6a867e8e1c368b681b4ee948119
   }
 }
