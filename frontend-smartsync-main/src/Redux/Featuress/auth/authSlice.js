@@ -22,8 +22,10 @@ const authSlice = createSlice({
     },
     logout: (state) => {
       state.isAuthenticated = false;
-      state.token = null; // إزالة التوكن فقط
-      localStorage.removeItem('token'); // مسح التوكن فقط
+      state.token = null;
+      localStorage.removeItem('token'); 
+      localStorage.removeItem('user');
+
     },
     
     

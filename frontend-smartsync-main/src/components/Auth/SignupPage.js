@@ -16,7 +16,6 @@ import { useSignupUserMutation } from "../../Redux/Featuress/auth/authApi";
 import { toast } from "react-toastify";
 import theme from "../../theme";
 import "react-toastify/dist/ReactToastify.css";
-import zxcvbn from "zxcvbn";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -55,12 +54,6 @@ const SignupPage = () => {
 
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
-      return;
-    }
-
-    const passwordStrength = zxcvbn(formData.password);
-    if (passwordStrength.score < 3) {
-      toast.error("Password is not strong enough. Please use a stronger password.");
       return;
     }
 

@@ -117,9 +117,9 @@ const Header = ({ toggleSidebar }) => {
 
           {/* Display user profile photo or default icon */}
           <IconButton onClick={() => navigate('/profile')}>
-            {user?.profilePhoto ? (
+            {user?.imageUrl ? (
               <Avatar
-                src={user.profilePhoto}  // Display user's profile photo
+                src={user.imageUrl}  // Display user's profile photo
                 sx={{ width: 40, height: 40 }}
               />
             ) : (
