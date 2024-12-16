@@ -71,7 +71,6 @@ const UserProfile = ({ toggleSidebar, isSidebarOpen }) => {
   const handleSaveChanges = async () => {
     setLoading(true);
     try {
-      // Update user name and image
       if (userData.firstName !== user.firstName || userData.lastName !== user.lastName) {
         await updateName({ firstName: userData.firstName, lastName: userData.lastName }).unwrap();
       }
@@ -88,17 +87,13 @@ const UserProfile = ({ toggleSidebar, isSidebarOpen }) => {
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
-      // Send the old password, new password, and confirmation to the backend
       if (userData.oldPassword && userData.newPassword && userData.newPassword === userData.confirmPassword) {
-        // Send the password change request to the backend
         await updatePassword({
           oldPassword: userData.oldPassword, 
           newPassword: userData.newPassword,
           confirmPassword: userData.confirmPassword
         }).unwrap();
-        toast.success("Password updated successfully!");
       } else if (userData.oldPassword || userData.newPassword || userData.confirmPassword) {
-        // Handle mismatch
         setPasswordError("New password and confirmation do not match.");
         setLoading(false);
         return;
@@ -108,7 +103,7 @@ const UserProfile = ({ toggleSidebar, isSidebarOpen }) => {
       navigate("/");
 
     } catch (error) {
-      console.error("Error updating profile:", error); // Log error for further investigation
+      console.error("Error updating profile:", error);
       toast.error(error?.data?.message || 'Error updating profile. Please try again later.');
     } finally {
       setLoading(false);

@@ -32,7 +32,6 @@ const Home = () => {
           }}
         >
        
-          {/* Add the Table component here */}
           <Table />
 
         </Container>

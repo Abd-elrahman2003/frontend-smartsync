@@ -3,7 +3,7 @@ import { Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faCamera, faChartLine, faUser } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
-import { Link } from 'react-router-dom';  // Import Link from react-router-dom
+import { Link } from 'react-router-dom'; 
 
 const Sidebar = ({ isOpen }) => {
   const theme = useTheme();

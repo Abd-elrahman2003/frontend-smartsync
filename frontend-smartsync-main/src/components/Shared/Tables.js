@@ -143,67 +143,73 @@ const Tables = () => {
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<FaPlus />}
-          onClick={handleAddClick}
-          sx={{
-            fontSize: { xs: '12px', sm: '14px', md: '16px' }, // تصغير الحجم في الشاشات الصغيرة
-            padding: { xs: '6px 12px', sm: '8px 16px' }, // تصغير الحشو في الشاشات الصغيرة
-          }}
-        >
-          Add
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<FaSearch />}
-          onClick={handleSearchClick}
-          sx={{
-            fontSize: { xs: '12px', sm: '14px', md: '16px' },
-            padding: { xs: '6px 12px', sm: '8px 16px' },
-          }}
-        >
-          Search
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<FaFileImport />}
-          sx={{
-            backgroundColor: theme.palette.error.main,
-            fontSize: { xs: '12px', sm: '14px', md: '16px' },
-            padding: { xs: '6px 12px', sm: '8px 16px' },
-          }}
-        >
-          Import
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<FaDownload />}
-          onClick={exportToPDF}
-          sx={{
-            backgroundColor: theme.palette.error.main,
-            fontSize: { xs: '12px', sm: '14px', md: '16px' },
-            padding: { xs: '6px 12px', sm: '8px 16px' },
-          }}
-        >
-          Export PDF
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<FaDownload />}
-          onClick={exportToExcel}
-          sx={{
-            backgroundColor: theme.palette.error.main,
-            fontSize: { xs: '12px', sm: '14px', md: '16px' },
-            padding: { xs: '6px 12px', sm: '8px 16px' },
-          }}
-        >
-          Export Excel
-        </Button>
-      </Box>
+     <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <Button
+    variant="contained"
+    color="primary"
+    startIcon={<FaPlus />}
+    onClick={handleAddClick}
+    sx={{
+      fontSize: { xs: "10px", sm: "12px", md: "14px" }, 
+      padding: { xs: "4px 8px", sm: "6px 10px" }, 
+      minWidth: "60px",
+    }}
+  >
+    Add
+  </Button>
+  <Button
+    variant="contained"
+    color="primary"
+    startIcon={<FaSearch />}
+    onClick={handleSearchClick}
+    sx={{
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Search
+  </Button>
+  <Button
+    variant="contained"
+    startIcon={<FaFileImport />}
+    sx={{
+      backgroundColor: theme.palette.error.main,
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Import
+  </Button>
+  <Button
+    variant="contained"
+    startIcon={<FaDownload />}
+    onClick={exportToPDF}
+    sx={{
+      backgroundColor: theme.palette.error.main,
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Export PDF
+  </Button>
+  <Button
+    variant="contained"
+    startIcon={<FaDownload />}
+    onClick={exportToExcel}
+    sx={{
+      backgroundColor: theme.palette.error.main,
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Export Excel
+  </Button>
+</Box>
+
 
       {isLoading ? (
         <Progress value={75} label="Uploading File" showPercentage={true} />

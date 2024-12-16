@@ -11,7 +11,6 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
-  // استخراج التوكن من الرابط
   const searchParams = new URLSearchParams(location.search);
   const token = searchParams.get("token");
 

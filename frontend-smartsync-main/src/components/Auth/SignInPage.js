@@ -41,10 +41,8 @@ const SignInPage = () => {
     try {
       const response = await signinUser(formData).unwrap();
   
-      // Dispatch the loginSuccess action
       dispatch(loginSuccess(response));
   
-      // Store token and user data in localStorage
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
   

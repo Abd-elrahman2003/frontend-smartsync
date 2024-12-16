@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Box, TextField, Button, Typography, Card, CardContent } from "@mui/material";
 import { FiMail } from "react-icons/fi";
 import { Link } from "react-router-dom";
-import theme from "../../theme"; // Import your theme
+import theme from "../../theme"; 
 import { useRequestResetPasswordMutation } from '../../Redux/Featuress/auth/authApi';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,15 +10,14 @@ import "react-toastify/dist/ReactToastify.css";
 const ForgetPassword = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [requestResetPassword, { isLoading }] = useRequestResetPasswordMutation(); // Mutation for reset password
+  const [requestResetPassword, { isLoading }] = useRequestResetPasswordMutation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Call the API to send reset password email
       await requestResetPassword({ email }).unwrap();
-      setIsSubmitted(true); // Show success message
+      setIsSubmitted(true); 
       toast.success("Password reset link sent successfully!");
     } catch (error) {
       toast.error(

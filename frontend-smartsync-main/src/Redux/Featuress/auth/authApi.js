@@ -6,7 +6,6 @@ export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:3000/api/v1/register' }),
   endpoints: (builder) => ({
-    // تسجيل المستخدم الجديد
     signupUser: builder.mutation({
       query: (userData) => ({
         url: '/signup',
@@ -14,7 +13,6 @@ export const authApi = createApi({
         body: userData,
       }),
     }),
-    // تسجيل الدخول
     signinUser: builder.mutation({
       query: (credentials) => ({
         url: '/signin',
@@ -37,7 +35,6 @@ export const authApi = createApi({
         }
       },
     }),
-    // طلب إعادة تعيين كلمة المرور
     requestResetPassword: builder.mutation({
       query: (data) => ({
         url: '/request-reset-password',
@@ -45,7 +42,6 @@ export const authApi = createApi({
         body: data,
       }),
     }),
-    // إعادة تعيين كلمة المرور
     resetPassword: builder.mutation({
       query: ({ token, newPassword }) => ({
         url: '/reset-password',
@@ -53,7 +49,6 @@ export const authApi = createApi({
         body: { token, newPassword },
       }),
     }),
-    // تحديث اسم المستخدم
     updateName: builder.mutation({
       query: (nameData) => ({
         url: '/update-name',
@@ -64,7 +59,6 @@ export const authApi = createApi({
         },
       }),
     }),
-    // تحديث كلمة المرور
     updatePassword: builder.mutation({
       query: (passwordData) => ({
         url: '/update-password',
@@ -75,7 +69,6 @@ export const authApi = createApi({
         },
       }),
     }),
-    // تحديث صورة المستخدم
     updateImage: builder.mutation({
       query: (imageData) => ({
         url: '/update-image',
@@ -86,7 +79,6 @@ export const authApi = createApi({
         },
       }),
     }),
-    // جلب بيانات المستخدم
     getProfile: builder.query({
       query: () => ({
         url: '/profile',

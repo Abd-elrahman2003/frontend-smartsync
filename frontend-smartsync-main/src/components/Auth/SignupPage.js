@@ -24,10 +24,10 @@ const SignupPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "USER", // Default role
+    role: "USER",
   });
 
-  const [isAgreed, setIsAgreed] = useState(false); // Checkbox state
+  const [isAgreed, setIsAgreed] = useState(false);
 
   const [signupUser, { isLoading }] = useSignupUserMutation();
   const navigate = useNavigate();
