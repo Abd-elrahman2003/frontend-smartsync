@@ -1,20 +1,35 @@
 import React, { useState } from "react";
-import { TextField, Button, Box, Typography, Card, CardContent } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  FormControlLabel,
+  Checkbox,
+} from "@mui/material";
 import { FiUser, FiMail, FiLock } from "react-icons/fi";
 import { ThemeProvider } from "@mui/material/styles";
 import { Link, useNavigate } from "react-router-dom";
-import theme from "../../theme";
+import { useSignupUserMutation } from "../../Redux/Featuress/auth/authApi";
 import { toast } from "react-toastify";
+import theme from "../../theme";
 import "react-toastify/dist/ReactToastify.css";
 
-const SignupPage = ({ setLoggedIn }) => {
+const SignupPage = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    role: "USER",
   });
 
+  const [isAgreed, setIsAgreed] = useState(false);
+
+  const [signupUser, { isLoading }] = useSignupUserMutation();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -25,18 +40,40 @@ const SignupPage = ({ setLoggedIn }) => {
     }));
   };
 
+  const handleCheckboxChange = (e) => {
+    setIsAgreed(e.target.checked);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isAgreed) {
+      toast.error("You must agree to the terms and conditions.");
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
       return;
     }
 
-    // مؤقتًا: تسجيل الدخول مباشرةً عند إرسال البيانات
-    toast.success("Account created successfully!");
-    setLoggedIn(true); 
-    navigate("/"); 
+    try {
+      await signupUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      }).unwrap();
+
+      toast.success("Account created successfully!");
+      navigate("/signin");
+    } catch (error) {
+      console.error("Signup error:", error);
+      toast.error(
+        error?.data?.message || "Failed to create an account. Please try again."
+      );
+    }
   };
 
   return (
@@ -57,13 +94,19 @@ const SignupPage = ({ setLoggedIn }) => {
             maxWidth: 500,
             padding: 4,
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
+            borderRadius: "8px",
           }}
         >
           <Typography
             variant="h4"
             align="center"
             gutterBottom
-            sx={{ fontWeight: "bold", color: "primary.main" }}
+            sx={{
+              fontWeight: "bold",
+              color: "primary.main",
+              letterSpacing: 1,
+              fontSize: "1.8rem",
+            }}
           >
             Create Your Account
           </Typography>
@@ -76,12 +119,19 @@ const SignupPage = ({ setLoggedIn }) => {
             Join us today and explore amazing features
           </Typography>
           <form onSubmit={handleSubmit} style={{ marginTop: "1.5rem" }}>
-            {[{ label: "Full Name", name: "name", type: "text", icon: <FiUser /> },
+            {[{ label: "First Name", name: "firstName", type: "text", icon: <FiUser /> },
+              { label: "Last Name", name: "lastName", type: "text", icon: <FiUser /> },
               { label: "Email Address", name: "email", type: "email", icon: <FiMail /> },
               { label: "Password", name: "password", type: "password", icon: <FiLock /> },
-              { label: "Confirm Password", name: "confirmPassword", type: "password", icon: <FiLock /> }].map((field, idx) => (
-              <CardContent key={idx} sx={{ padding: "6px 0" }}>
-                <Box display="flex" alignItems="center" mb={1}>
+              {
+                label: "Confirm Password",
+                name: "confirmPassword",
+                type: "password",
+                icon: <FiLock />,
+              },
+            ].map((field, idx) => (
+              <CardContent key={idx} sx={{ padding: "10px 0" }}>
+                <Box display="flex" alignItems="center" mb={2}>
                   <Box
                     sx={{
                       marginRight: 1.5,
@@ -94,7 +144,7 @@ const SignupPage = ({ setLoggedIn }) => {
                   <Typography
                     variant="body1"
                     fontWeight="bold"
-                    sx={{ color: "text.primary" }}
+                    sx={{ color: "text.primary", fontSize: "1rem" }}
                   >
                     {field.label}
                   </Typography>
@@ -120,6 +170,26 @@ const SignupPage = ({ setLoggedIn }) => {
               </CardContent>
             ))}
 
+            <Box mt={3}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isAgreed}
+                    onChange={handleCheckboxChange}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" color="textSecondary">
+                    I agree to the{" "}
+                    <Link to="/terms" style={{ color: theme.palette.primary.main }}>
+                      terms and conditions
+                    </Link>.
+                  </Typography>
+                }
+              />
+            </Box>
+
             <Box textAlign="center" mt={4}>
               <Button
                 type="submit"
@@ -127,15 +197,16 @@ const SignupPage = ({ setLoggedIn }) => {
                 sx={{
                   backgroundColor: "primary.main",
                   color: "#FFFFFF",
-                  padding: "8px 0",
+                  padding: "10px 0",
                   borderRadius: "8px",
                   fontWeight: "bold",
                   fontSize: "16px",
                   "&:hover": { backgroundColor: "secondary.main" },
                 }}
                 fullWidth
+                disabled={isLoading}
               >
-                Create Account
+                {isLoading ? "Creating..." : "Create Account"}
               </Button>
             </Box>
 

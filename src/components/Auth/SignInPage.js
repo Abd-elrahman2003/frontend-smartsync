@@ -10,12 +10,12 @@ import {
 import { FiMail, FiLock } from "react-icons/fi";
 import { ThemeProvider } from "@mui/material/styles";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../Redux/Featuress/auth/authSlice";  
 import { useSigninUserMutation } from "../../Redux/Featuress/auth/authApi";
-import theme from "../../theme"; // Theme
+import theme from "../../theme";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../../Redux/Featuress/auth/authSlice";
 
 const SignInPage = () => {
   const [formData, setFormData] = useState({
@@ -24,8 +24,8 @@ const SignInPage = () => {
   });
 
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [signinUser, { isLoading }] = useSigninUserMutation(); 
+  const dispatch=useDispatch()
+  const [signinUser, { isLoading }] = useSigninUserMutation();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,20 +37,25 @@ const SignInPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
-      const response = await signinUser(formData).unwrap(); 
-      dispatch(loginSuccess({ user: response.user, token: response.token })); 
-      toast.success("Login successful!");
-      navigate("/"); 
+      const response = await signinUser(formData).unwrap();
+  
+      dispatch(loginSuccess(response));
+  
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+  
+      navigate("/");
     } catch (error) {
-      toast.error("Invalid email or password. Please try again.");
+      toast.error(
+        error?.data?.message || "Invalid email or password. Please try again."
+      );
     }
   };
-
+  
   return (
     <ThemeProvider theme={theme}>
-      
       <Box
         sx={{
           minHeight: "100vh",
@@ -61,7 +66,6 @@ const SignInPage = () => {
           padding: 3,
         }}
       >
-        
         <Card
           sx={{
             width: "100%",
@@ -70,7 +74,6 @@ const SignInPage = () => {
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
           }}
         >
-          
           <Typography
             variant="h4"
             align="center"
@@ -88,8 +91,10 @@ const SignInPage = () => {
             Sign in to your account and continue where you left off.
           </Typography>
           <form onSubmit={handleSubmit} style={{ marginTop: "1.5rem" }}>
-            {[{ label: "Email Address", name: "email", type: "email", icon: <FiMail /> },
-              { label: "Password", name: "password", type: "password", icon: <FiLock /> }].map((field, idx) => (
+            {[
+              { label: "Email Address", name: "email", type: "email", icon: <FiMail /> },
+              { label: "Password", name: "password", type: "password", icon: <FiLock /> },
+            ].map((field, idx) => (
               <CardContent key={idx} sx={{ padding: "6px 0" }}>
                 <Box display="flex" alignItems="center" mb={1}>
                   <Box
@@ -135,7 +140,6 @@ const SignInPage = () => {
             ))}
 
             <Box textAlign="center" mt={4}>
-          
               <Button
                 type="submit"
                 variant="contained"
@@ -145,7 +149,7 @@ const SignInPage = () => {
                   padding: "8px 0",
                   borderRadius: "8px",
                   fontWeight: "bold",
-                  fontSize:"16px",
+                  fontSize: "16px",
                   "&:hover": { backgroundColor: "secondary.main" },
                 }}
                 fullWidth
@@ -160,10 +164,10 @@ const SignInPage = () => {
                 <Link
                   to="/forget-password"
                   style={{
-                    color:theme.palette.text.primary,
+                    color: theme.palette.text.primary,
                     textDecoration: "none",
                     fontWeight: "bold",
-                    fontSize:"16px",
+                    fontSize: "16px",
                   }}
                 >
                   Forgot Password?
@@ -181,7 +185,7 @@ const SignInPage = () => {
                     color: theme.palette.primary.main,
                     textDecoration: "none",
                     fontWeight: "bold",
-                    fontSize:"18px",
+                    fontSize: "18px",
                   }}
                 >
                   Sign up here

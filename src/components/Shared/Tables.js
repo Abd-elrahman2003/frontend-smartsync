@@ -24,7 +24,7 @@ import * as XLSX from "xlsx";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
 import Progress from "../Common/Progress";
-import Pagination from "../Common/Pagination"; 
+import Pagination from "../Common/Pagination";
 
 const Tables = () => {
   const theme = useTheme();
@@ -38,7 +38,7 @@ const Tables = () => {
   }));
 
   const [data, setData] = useState(initialData);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openSearchDialog, setOpenSearchDialog] = useState(false);
@@ -67,7 +67,7 @@ const Tables = () => {
 
   const exportToPDF = async () => {
     setIsLoading(true);
-  
+
     const doc = new jsPDF();
     const tableColumn = ["ID", "Username", "Role", "Store", "Description"];
     const tableRows = data.map((row) => [
@@ -77,30 +77,30 @@ const Tables = () => {
       row.store,
       row.description,
     ]);
-  
+
     doc.text("User Data Table", 14, 10);
-  
+
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 20,
     });
-  
+
     setTimeout(() => {
       doc.save("table_data.pdf");
-      setIsLoading(false); 
+      setIsLoading(false);
     }, 1000);
   };
 
   const exportToExcel = async () => {
-    setIsLoading(true); 
+    setIsLoading(true);
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
 
     setTimeout(() => {
       XLSX.writeFile(workbook, "table_data.xlsx");
-      setIsLoading(false); 
+      setIsLoading(false);
     }, 1000);
   };
 
@@ -116,7 +116,7 @@ const Tables = () => {
       text: "You will not be able to revert this!",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: theme.palette.error.main, 
+      confirmButtonColor: theme.palette.error.main,
       cancelButtonColor: theme.palette.secondary.main,
       confirmButtonText: "Yes, delete it!",
     }).then((result) => {
@@ -126,7 +126,7 @@ const Tables = () => {
       }
     });
   };
-  
+
   const handleSearchClick = () => setOpenSearchDialog(true);
 
   const handleAddSubmit = () => {
@@ -143,23 +143,73 @@ const Tables = () => {
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Button variant="contained" color="primary" startIcon={<FaPlus />} onClick={handleAddClick}>
-          Add
-        </Button>
-        <Button variant="contained" color="primary" startIcon={<FaSearch />} onClick={handleSearchClick}>
-          Search
-        </Button>
-        <Button variant="contained" startIcon={<FaFileImport />} sx={{ backgroundColor: theme.palette.error.main }}>
-          Import
-        </Button>
-        <Button variant="contained" startIcon={<FaDownload />} onClick={exportToPDF} sx={{ backgroundColor: theme.palette.error.main }}>
-          Export PDF
-        </Button>
-        <Button variant="contained" startIcon={<FaDownload />} onClick={exportToExcel} sx={{ backgroundColor: theme.palette.error.main }}>
-          Export Excel
-        </Button>
-      </Box>
+     <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <Button
+    variant="contained"
+    color="primary"
+    startIcon={<FaPlus />}
+    onClick={handleAddClick}
+    sx={{
+      fontSize: { xs: "10px", sm: "12px", md: "14px" }, 
+      padding: { xs: "4px 8px", sm: "6px 10px" }, 
+      minWidth: "60px",
+    }}
+  >
+    Add
+  </Button>
+  <Button
+    variant="contained"
+    color="primary"
+    startIcon={<FaSearch />}
+    onClick={handleSearchClick}
+    sx={{
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Search
+  </Button>
+  <Button
+    variant="contained"
+    startIcon={<FaFileImport />}
+    sx={{
+      backgroundColor: theme.palette.error.main,
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Import
+  </Button>
+  <Button
+    variant="contained"
+    startIcon={<FaDownload />}
+    onClick={exportToPDF}
+    sx={{
+      backgroundColor: theme.palette.error.main,
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Export PDF
+  </Button>
+  <Button
+    variant="contained"
+    startIcon={<FaDownload />}
+    onClick={exportToExcel}
+    sx={{
+      backgroundColor: theme.palette.error.main,
+      fontSize: { xs: "10px", sm: "12px", md: "14px" },
+      padding: { xs: "4px 8px", sm: "6px 10px" },
+      minWidth: "60px",
+    }}
+  >
+    Export Excel
+  </Button>
+</Box>
+
 
       {isLoading ? (
         <Progress value={75} label="Uploading File" showPercentage={true} />
@@ -223,10 +273,10 @@ const Tables = () => {
       <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
         <DialogTitle>Edit Item</DialogTitle>
         <DialogContent>
-          <TextField label="Username" defaultValue={editData?.username} fullWidth margin="normal" />
-          <TextField label="Role" defaultValue={editData?.role} fullWidth margin="normal" />
-          <TextField label="Store" defaultValue={editData?.store} fullWidth margin="normal" />
-          <TextField label="Description" defaultValue={editData?.description} fullWidth margin="normal" />
+          <TextField label="Username" value={editData?.username} fullWidth margin="normal" />
+          <TextField label="Role" value={editData?.role} fullWidth margin="normal" />
+          <TextField label="Store" value={editData?.store} fullWidth margin="normal" />
+          <TextField label="Description" value={editData?.description} fullWidth margin="normal" />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)} color="secondary">Cancel</Button>
@@ -237,7 +287,13 @@ const Tables = () => {
       <Dialog open={openSearchDialog} onClose={() => setOpenSearchDialog(false)}>
         <DialogTitle>Search</DialogTitle>
         <DialogContent>
-          <TextField label="Search Query" fullWidth value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} margin="normal" />
+          <TextField
+            label="Search"
+            fullWidth
+            margin="normal"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenSearchDialog(false)} color="secondary">Cancel</Button>

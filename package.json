@@ -16,7 +16,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "autoprefixer": "^10.4.20",
-    "framer-motion": "^11.11.9",
+    "framer-motion": "^11.13.3",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "postcss": "^8.4.47",
@@ -30,7 +30,8 @@
     "react-tooltip": "^5.28.0",
     "sweetalert2": "^11.14.5",
     "web-vitals": "^2.1.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zxcvbn": "^4.4.2"
   },
   "scripts": {
     "start": "react-scripts start",

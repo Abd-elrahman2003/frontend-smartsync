@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Container, Grid, Typography, IconButton, Link, useTheme, useMediaQuery } from "@mui/material";
+import { Box, Container, Grid, Typography, IconButton, Link } from "@mui/material";
 import { styled } from "@mui/system";
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 
@@ -49,9 +49,6 @@ const FooterLink = styled(Link)({
 });
 
 const Footer = () => {
-  const theme = useTheme();
-  // eslint-disable-next-line no-unused-vars
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const contactInfo = [
     { icon: <FaPhone />, text: "+1 (555) 123-4567" },

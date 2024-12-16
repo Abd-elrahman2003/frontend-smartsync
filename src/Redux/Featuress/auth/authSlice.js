@@ -1,11 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// حالة المستخدم الافتراضية
 const initialState = {
-  isAuthenticated: false,
-  user: null,
-  token: null,
+  isAuthenticated: !!localStorage.getItem('token'),
+  user: (localStorage.getItem('user') && localStorage.getItem('user') !== 'undefined') 
+    ? JSON.parse(localStorage.getItem('user')) 
+    : null,
+  token: localStorage.getItem('token') || null,
 };
+
+
+
 
 const authSlice = createSlice({
   name: 'auth',
@@ -18,9 +22,13 @@ const authSlice = createSlice({
     },
     logout: (state) => {
       state.isAuthenticated = false;
-      state.user = null;
       state.token = null;
+      localStorage.removeItem('token'); 
+      localStorage.removeItem('user');
+
     },
+    
+    
   },
 });
 

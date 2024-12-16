@@ -3,15 +3,16 @@ import { Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faCamera, faChartLine, faUser } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
+import { Link } from 'react-router-dom'; 
 
 const Sidebar = ({ isOpen }) => {
   const theme = useTheme();
 
   const menuItems = [
-    { icon: faHome, text: 'Home' },
-    { icon: faCamera, text: 'Cameras' },
-    { icon: faChartLine, text: 'Statistics' },
-    { icon: faUser, text: 'Profile' },
+    { icon: faHome, text: 'Home', href: '/' },
+    { icon: faCamera, text: 'Cameras', href: '/cameras' },
+    { icon: faChartLine, text: 'Statistics', href: '/statistics' },
+    { icon: faUser, text: 'Profile', href: '/profile' },
   ];
 
   return (
@@ -37,7 +38,6 @@ const Sidebar = ({ isOpen }) => {
             button
             key={index}
             sx={{
-            
               '&:hover': isOpen
                 ? {
                     backgroundColor: theme.palette.primary.main, 
@@ -56,7 +56,11 @@ const Sidebar = ({ isOpen }) => {
             >
               <FontAwesomeIcon icon={item.icon} />
             </ListItemIcon>
-            {isOpen && <ListItemText primary={item.text} />}
+
+            {/* Use Link for internal routing */}
+            <Link to={item.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+              {isOpen && <ListItemText primary={item.text} />}
+            </Link>
           </ListItem>
         ))}
       </List>

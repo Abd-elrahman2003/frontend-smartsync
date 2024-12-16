@@ -2,16 +2,28 @@ import React, { useState } from "react";
 import { Box, TextField, Button, Typography, Card, CardContent } from "@mui/material";
 import { FiMail } from "react-icons/fi";
 import { Link } from "react-router-dom";
-import theme from "../../theme";
+import theme from "../../theme"; 
+import { useRequestResetPasswordMutation } from '../../Redux/Featuress/auth/authApi';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [requestResetPassword, { isLoading }] = useRequestResetPasswordMutation();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Password reset email sent to:", email);
-    setIsSubmitted(true);
+
+    try {
+      await requestResetPassword({ email }).unwrap();
+      setIsSubmitted(true); 
+      toast.success("Password reset link sent successfully!");
+    } catch (error) {
+      toast.error(
+        error?.data?.message || "Failed to send password reset link. Please try again."
+      );
+    }
   };
 
   return (
@@ -104,8 +116,9 @@ const ForgetPassword = () => {
                   "&:hover": { backgroundColor: "secondary.main" },
                 }}
                 fullWidth
+                disabled={isLoading} // Disable button while loading
               >
-                Send Reset Link
+                {isLoading ? "Sending..." : "Send Reset Link"}
               </Button>
             </Box>
           </form>
@@ -114,7 +127,15 @@ const ForgetPassword = () => {
         <Box textAlign="center" mt={3}>
           <Typography variant="body2" color="textSecondary">
             Remembered your password?{" "}
-            <Link to="/signin" style={{ textDecoration: "none",fontSize:"18px", fontWeight: "bold", color: theme.palette.primary.main }}>
+            <Link
+              to="/signin"
+              style={{
+                textDecoration: "none",
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: theme.palette.primary.main,
+              }}
+            >
               Sign in here
             </Link>
           </Typography>
