@@ -10,6 +10,8 @@ import Home from "./components/Home/Home";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserProfile from "./components/Auth/UserProfile";
+import Screen from "./pages/Screen";
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -41,6 +43,8 @@ const App = () => {
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<UserProfile toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/Screen" element={<Screen toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        
 
         {/* Check directly for token in localStorage and redirect if not found */}
         <Route

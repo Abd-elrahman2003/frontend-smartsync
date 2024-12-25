@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faCamera, faChartLine, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faCamera, faChartLine, faUser, faDesktop } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom'; 
 
@@ -9,10 +9,11 @@ const Sidebar = ({ isOpen }) => {
   const theme = useTheme();
 
   const menuItems = [
-    { icon: faHome, text: 'Home', href: '/' },
+    { icon: faHome, text: 'dashboard', href: '/' },
     { icon: faCamera, text: 'Cameras', href: '/cameras' },
     { icon: faChartLine, text: 'Statistics', href: '/statistics' },
     { icon: faUser, text: 'Profile', href: '/profile' },
+    { icon: faDesktop, text: 'Screen', href: '/Screen' },
   ];
 
   return (
