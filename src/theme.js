@@ -26,8 +26,6 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '&:hover': {
-            backgroundColor: '#EB5800', // Orange Hover
-            color: '#FFFFFF', // White Text
             cursor: 'pointer', // Add cursor pointer on hover
           },
         },
@@ -38,8 +36,6 @@ const theme = createTheme({
         root: {
           transition: 'background-color 0.3s ease',
           '&:hover': {
-            backgroundColor: '#EB5800', // Orange Hover
-            color: '#FFFFFF', // White Text
             cursor: 'pointer', // Add cursor pointer on hover
           },
         },
@@ -50,7 +46,6 @@ const theme = createTheme({
         root: {
           transition: 'color 0.3s ease',
           '&:hover': {
-            color: '#EB5800', // Orange Hover for Icons
             cursor: 'pointer', // Add cursor pointer on hover
           },
         },

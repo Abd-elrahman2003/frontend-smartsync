@@ -1,67 +1,192 @@
-import React from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, List, ListItem, ListItemIcon, ListItemText, Collapse } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faCamera, faChartLine, faUser } from '@fortawesome/free-solid-svg-icons';
+import {
+  faHome,
+  faUserGroup,
+  faCircle,
+  faGear,
+  faWarehouse,
+  faChartLine,
+  faUserCircle,
+  faChevronDown
+} from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
 
 const Sidebar = ({ isOpen }) => {
   const theme = useTheme();
+  const [userManagementOpen, setUserManagementOpen] = useState(false);
 
   const menuItems = [
-    { icon: faHome, text: 'Home', href: '/' },
-    { icon: faCamera, text: 'Cameras', href: '/cameras' },
-    { icon: faChartLine, text: 'Statistics', href: '/statistics' },
-    { icon: faUser, text: 'Profile', href: '/profile' },
+    { icon: faHome, text: 'Dashboard', href: '/' },
+    {
+      icon: faUserGroup,
+      text: 'User Management',
+      href: '/user-management',
+      children: [
+        { icon: faCircle, text: 'Users', href: '/users' },
+        { icon: faCircle, text: 'Roles', href: '/roles' },
+        { icon: faCircle, text: 'System Logs', href: '/system-logs' },
+      ],
+    },
+    { icon: faGear, text: 'Settings', href: '/settings' },
+    { icon: faWarehouse, text: 'Warehouse', href: '/warehouse' },
+    { icon: faChartLine, text: 'Reports', href: '/reports' },
+    { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
+    { icon: faUserCircle, text: 'Screens', href: '/Screen' }
   ];
 
   return (
     <Box
       sx={{
-        width: isOpen ? 220 : 60, 
-        height: 'calc(110vh - 60px)', 
+        width: isOpen ? 250 : 60,
+        height: '100vh',
         backgroundColor: theme.palette.background.paper,
         boxShadow: '2px 0 6px rgba(0, 0, 0, 0.1)',
         display: 'flex',
         flexDirection: 'column',
         paddingTop: theme.spacing(13),
         position: 'sticky',
-        top: '5px',
+        top: '0',
         left: 0,
-        transition: 'width 0.3s', 
-        pointerEvents: isOpen ? 'auto' : 'none', 
+        transition: 'width 0.3s',
+        overflow: 'hidden',
       }}
     >
       <List>
         {menuItems.map((item, index) => (
-          <ListItem
-            button
-            key={index}
-            sx={{
-              '&:hover': isOpen
-                ? {
-                    backgroundColor: theme.palette.primary.main, 
-                    color: '#FFFFFF', 
-                    borderRadius: theme.shape.borderRadius,
-                  }
-                : {},
-              cursor: isOpen ? 'pointer' : 'default', 
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                fontSize: isOpen ? '18px' : '21px', 
-                marginBottom: isOpen ? '0px' : '20px', 
-              }}
-            >
-              <FontAwesomeIcon icon={item.icon} />
-            </ListItemIcon>
-
-            {/* Use Link for internal routing */}
-            <Link to={item.href} style={{ textDecoration: 'none', color: 'inherit' }}>
-              {isOpen && <ListItemText primary={item.text} />}
-            </Link>
-          </ListItem>
+          <React.Fragment key={index}>
+            {item.children ? (
+              <>
+                <ListItem
+                  button
+                  onClick={() => setUserManagementOpen(!userManagementOpen)}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.main,
+                      color: '#FFFFFF',
+                    },
+                    color: theme.palette.text.primary,
+                    cursor: isOpen ? 'pointer' : 'default',
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      fontSize: isOpen ? '18px' : '21px',
+                      padding: isOpen ? '0' : '10px 0',
+                      color: theme.palette.text.primary,
+                      '&:hover': {
+                        color: '#FFFFFF',
+                      },
+                    }}
+                  >
+                    <FontAwesomeIcon icon={item.icon} />
+                  </ListItemIcon>
+                  {isOpen && (
+                    <ListItemText
+                      primary={item.text}
+                      sx={{
+                        color: theme.palette.text.primary,
+                        '&:hover': {
+                          color: '#FFFFFF',
+                        },
+                      }}
+                    />
+                  )}
+                  {isOpen && (
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      style={{
+                        color: theme.palette.text.primary,
+                        transform: userManagementOpen ? 'rotate(180deg)' : 'none',
+                        transition: 'transform 0.3s',
+                      }}
+                    />
+                  )}
+                </ListItem>
+                <Collapse in={userManagementOpen && isOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.children.map((childItem, childIndex) => (
+                      <ListItem
+                        button
+                        key={childIndex}
+                        component={Link}
+                        to={childItem.href}
+                        sx={{
+                          display: isOpen ? 'flex' : 'none', 
+                          pl: 4,
+                          '&:hover': {
+                            backgroundColor: theme.palette.primary.main,
+                            color: '#FFFFFF',
+                          },
+                          color: theme.palette.text.primary,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            fontSize: '10px',
+                            color: theme.palette.text.primary,
+                            '&:hover': {
+                              color: '#FFFFFF',
+                            },
+                          }}
+                        >
+                          <FontAwesomeIcon icon={childItem.icon} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={childItem.text}
+                          sx={{
+                            color: theme.palette.text.primary,
+                            '&:hover': {
+                              color: '#FFFFFF',
+                            },
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Collapse>
+              </>
+            ) : (
+              <ListItem
+                button
+                key={index}
+                component={Link}
+                to={item.href}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.main,
+                    color: '#FFFFFF',
+                  },
+                  color: theme.palette.text.primary,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    fontSize: isOpen ? '18px' : '21px',
+                    color: theme.palette.text.primary,
+                    '&:hover': {
+                      color: '#FFFFFF',
+                    },
+                  }}
+                >
+                  <FontAwesomeIcon icon={item.icon} />
+                </ListItemIcon>
+                {isOpen && (
+                  <ListItemText
+                    primary={item.text}
+                    sx={{
+                      color: theme.palette.text.primary,
+                      '&:hover': {
+                        color: '#FFFFFF',
+                      },
+                    }}
+                  />
+                )}
+              </ListItem>
+            )}
+          </React.Fragment>
         ))}
       </List>
     </Box>

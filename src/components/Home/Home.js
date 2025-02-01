@@ -3,7 +3,6 @@ import Header from "../Shared/Header";
 import Sidebar from "../Shared/Sidebar"; 
 import Footer from "../Shared/Footer";
 import { Box, Container } from "@mui/material";
-import Table from "../Shared/Tables"; 
 
 const Home = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -32,7 +31,6 @@ const Home = () => {
           }}
         >
        
-          <Table />
 
         </Container>
       </Box>
