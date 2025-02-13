@@ -12,6 +12,8 @@ import "react-toastify/dist/ReactToastify.css";
 import UserProfile from "./components/Auth/UserProfile";
 import Screen from "./pages/Screen";
 import Users from "./pages/Users";
+import Category from "./pages/Category";
+
 
 
 const App = () => {
@@ -46,6 +48,8 @@ const App = () => {
         <Route path="/profile" element={<UserProfile toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/Screen" element={<Screen toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
+
 
         
 
