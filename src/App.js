@@ -13,6 +13,7 @@ import UserProfile from "./components/Auth/UserProfile";
 import Screen from "./pages/Screen";
 import Locations from "./pages/Locations";
 import Users from "./pages/Users";
+import Roles from "./pages/Roles";
 
 
 const App = () => {
