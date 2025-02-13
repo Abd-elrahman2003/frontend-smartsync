@@ -7,6 +7,8 @@ import screensReducer from '../Featuress/screens/screensSlice';
 import usersReducer from '../Featuress/users/usersSlice';
 import permissionsReducer from '../Featuress/permissions/permissionsSlice';
 import { permissionsApi } from '../Featuress/permissions/permissionsApi';
+import rolesReducer from '../Featuress/Roles/rolesSlice'
+import { rolesApi } from '../Featuress/Roles/rolesApi';
 
 export const store = configureStore({
   reducer: {
@@ -14,17 +16,20 @@ export const store = configureStore({
     [screensApi.reducerPath]: screensApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [permissionsApi.reducerPath]: permissionsApi.reducer,
+    [rolesApi.reducerPath]:rolesApi.reducer,
     auth: authReducer,
     screens: screensReducer,
     users: usersReducer,
     permissions: permissionsReducer,
+    roles:rolesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       authApi.middleware,
       screensApi.middleware,
       usersApi.middleware,
-      permissionsApi.middleware
+      permissionsApi.middleware,
+      rolesApi.middleware,
     ),
 });
 
