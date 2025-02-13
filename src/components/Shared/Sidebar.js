@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText, Collapse } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -16,8 +16,24 @@ import { Link } from 'react-router-dom';
 
 const Sidebar = ({ isOpen }) => {
   const theme = useTheme();
-  const [userManagementOpen, setUserManagementOpen] = useState(false);
 
+  const [userManagementOpen, setUserManagementOpen] = useState("none");
+  const [prev, setPrev] = useState("none");
+  
+  const toggleUserManagement = (current) => {
+    console.log("Previous:", prev);
+    console.log("Current:", current);
+  
+    if (prev === current) {
+      setUserManagementOpen("none");
+      setPrev("none"); // Reset prev to "none"
+    } else {
+      setUserManagementOpen(current);
+      setPrev(current);
+    }
+  };
+  
+  
   const menuItems = [
     { icon: faHome, text: 'Dashboard', href: '/' },
     {
@@ -31,7 +47,13 @@ const Sidebar = ({ isOpen }) => {
       ],
     },
     { icon: faGear, text: 'Settings', href: '/settings' },
-    { icon: faWarehouse, text: 'Warehouse', href: '/warehouse' },
+    { icon: faWarehouse, text: 'Warehouse', href: '/warehouse', 
+      children: [
+        { icon: faCircle, text: 'Users', href: '/users' },
+        { icon: faCircle, text: 'Roles', href: '/roles' },
+        { icon: faCircle, text: 'System Logs', href: '/system-logs' },
+      ],
+     },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
     { icon: faUserCircle, text: 'Screens', href: '/Screen' }
@@ -61,7 +83,7 @@ const Sidebar = ({ isOpen }) => {
               <>
                 <ListItem
                   button
-                  onClick={() => setUserManagementOpen(!userManagementOpen)}
+                  onClick={() => toggleUserManagement(item.text)}
                   sx={{
                     '&:hover': {
                       backgroundColor: theme.palette.primary.main,
@@ -99,13 +121,13 @@ const Sidebar = ({ isOpen }) => {
                       icon={faChevronDown}
                       style={{
                         color: theme.palette.text.primary,
-                        transform: userManagementOpen ? 'rotate(180deg)' : 'none',
+                        transform: userManagementOpen == item.text ? 'rotate(180deg)' : 'none',
                         transition: 'transform 0.3s',
                       }}
                     />
                   )}
                 </ListItem>
-                <Collapse in={userManagementOpen && isOpen} timeout="auto" unmountOnExit>
+                <Collapse in={userManagementOpen == item.text && isOpen} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
                     {item.children.map((childItem, childIndex) => (
                       <ListItem
