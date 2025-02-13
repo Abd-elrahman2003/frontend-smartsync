@@ -49,9 +49,8 @@ const Sidebar = ({ isOpen }) => {
     { icon: faGear, text: 'Settings', href: '/settings' },
     { icon: faWarehouse, text: 'Warehouse', href: '/warehouse', 
       children: [
-        { icon: faCircle, text: 'Users', href: '/users' },
-        { icon: faCircle, text: 'Roles', href: '/roles' },
-        { icon: faCircle, text: 'System Logs', href: '/system-logs' },
+        { icon: faCircle, text: 'items', href: '/users' },
+        { icon: faCircle, text: 'locations', href: '/locations' },
       ],
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
