@@ -19,10 +19,13 @@ import {
 import { FaEdit, FaTrash, FaLock } from "react-icons/fa";
 import { useTheme } from "@mui/material/styles";
 
-const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
+const RolesTable = ({ columns, data, onEdit, onDelete, onLock }) => {
   const theme = useTheme();
   const [editDialog, setEditDialog] = useState({ open: false, rowData: {} });
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, rowIndex: null });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    rowIndex: null,
+  });
 
   // Handle edit dialog submission
   const handleEditSubmit = () => {
@@ -30,21 +33,20 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
     setEditDialog({ open: false, rowData: {} });
   };
 
-  // Handle delete confirmation
   const handleDeleteConfirm = () => {
-    onDelete(deleteDialog.rowIndex);
-    setDeleteDialog({ open: false, rowIndex: null });
+    onDelete(deleteDialog.roleName);
+    setDeleteDialog({ open: false, rowIndex: null, roleName: null });
   };
 
   // Custom styles for larger font
   const cellStyles = {
-    fontSize: '1rem',  // Increased font size
+    fontSize: "1rem", // Increased font size
   };
 
   const headerCellStyles = {
     ...cellStyles,
     color: theme.palette.common.white,
-    fontWeight: 400,     // Makes headers bolder
+    fontWeight: 400, // Makes headers bolder
   };
 
   return (
@@ -68,19 +70,21 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
           </TableHead>
           <TableBody>
             {data.map((row, rowIndex) => (
-              <TableRow 
+              <TableRow
                 key={rowIndex}
-                sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                sx={{
+                  "&:hover": { backgroundColor: theme.palette.action.hover },
+                }}
               >
                 {columns.map((col, colIndex) => (
                   <TableCell key={colIndex} sx={cellStyles}>
                     {row[col]}
-                    {/* Check if the column is "permission" and add lock icon */}
+                    {/* Check if the column is "Permissions" and add lock icon */}
                     {col === "Permissions" && (
                       <IconButton
                         color="secondary"
                         onClick={() => onLock(row)} // Trigger the lock action
-                        sx={{ marginLeft: 1, fontSize: '18px' }}
+                        sx={{ marginLeft: 1, fontSize: "18px" }}
                       >
                         <FaLock />
                       </IconButton>
@@ -90,8 +94,10 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
                 <TableCell sx={cellStyles}>
                   <IconButton
                     color="primary"
-                    onClick={() => setEditDialog({ open: true, rowData: row })}
-                    sx={{ fontSize: '19px' }}
+                    onClick={() => {
+                      setEditDialog({ open: true, rowData: row });
+                    }}
+                    sx={{ fontSize: "19px" }}
                   >
                     <FaEdit />
                   </IconButton>
@@ -99,8 +105,14 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
                 <TableCell sx={cellStyles}>
                   <IconButton
                     color="error"
-                    onClick={() => setDeleteDialog({ open: true, rowIndex })}
-                    sx={{ fontSize: '19px' }}
+                    onClick={() => {
+                      setDeleteDialog({
+                        open: true,
+                        rowIndex,
+                        roleName: row["Role Name"],
+                      });
+                    }}
+                    sx={{ fontSize: "19px" }}
                   >
                     <FaTrash />
                   </IconButton>
@@ -112,8 +124,8 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
       </TableContainer>
 
       {/* Edit Dialog */}
-      <Dialog 
-        open={editDialog.open} 
+      <Dialog
+        open={editDialog.open}
         onClose={() => setEditDialog({ open: false, rowData: {} })}
       >
         <DialogTitle>Edit Item</DialogTitle>
@@ -135,16 +147,13 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
           ))}
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={() => setEditDialog({ open: false, rowData: {} })} 
+          <Button
+            onClick={() => setEditDialog({ open: false, rowData: {} })}
             color="secondary"
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleEditSubmit} 
-            color="primary"
-          >
+          <Button onClick={handleEditSubmit} color="primary">
             Save
           </Button>
         </DialogActions>
@@ -157,7 +166,7 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
       >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ fontSize: '1.2rem' }}>
+          <DialogContentText sx={{ fontSize: "1.2rem" }}>
             Are you sure you want to delete this item?
           </DialogContentText>
         </DialogContent>
@@ -168,11 +177,7 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
-            autoFocus
-          >
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
             Delete
           </Button>
         </DialogActions>
@@ -181,4 +186,4 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
   );
 };
 
-export default Tables;
+export default RolesTable;

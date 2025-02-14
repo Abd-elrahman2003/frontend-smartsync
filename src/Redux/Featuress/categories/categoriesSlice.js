@@ -1,9 +1,11 @@
+// categoriesSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   selectedCategory: null,
   filters: {
     search: '',
+    name: '',
   },
 };
 

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// Category.js
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Dialog,
@@ -11,43 +12,63 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Sidebar from "../components/Shared/Sidebar";
+import CategoriesTable from "../components/Shared/CategoriesTable";
 import Header from "../components/Shared/Header";
 import Footer from "../components/Shared/Footer";
 import Buttons from "../components/Shared/Buttons";
-import Tables from "../components/Shared/Tables";
-import { useGetCategoriesQuery, useCreateCategoryMutation, useUpdateCategoryMutation, useDeleteCategoryMutation } from "../Redux/Featuress/categories/categoriesApi";
+import Pagination from "../components/Common/Pagination";
+import {
+  useGetCategoriesQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+} from "../Redux/Featuress/categories/categoriesApi";
 import { toast } from "react-toastify";
 
 const Category = ({ toggleSidebar, isSidebarOpen }) => {
   const theme = useTheme();
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openSearchDialog, setOpenSearchDialog] = useState(false);
-  const [newCategory, setNewCategory] = useState({
+  const [currentPage, setCurrentPage] = useState(1);
+  const [newItem, setNewItem] = useState({
     name: "",
     icon: "",
   });
-  const [editingCategory, setEditingCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
-  // RTK Query hooks
-  const { data: categories = [], isLoading, refetch } = useGetCategoriesQuery();
+  
+  const { 
+    data: categoriesData = {}, 
+    isLoading, 
+    isFetching, 
+    refetch 
+  } = useGetCategoriesQuery(currentPage, {
+    refetchOnMountOrArgChange: true
+  });
+
   const [createCategory] = useCreateCategoryMutation();
   const [updateCategory] = useUpdateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
 
-  const columns = ["name", "icon"];
+  const columns = ["id", "name", "icon"];
 
   const handleAddClick = () => setOpenAddDialog(true);
 
   const handleAddSubmit = async () => {
+    if (!newItem.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+
     try {
-      await createCategory(newCategory);
+      await createCategory(newItem).unwrap();
       setOpenAddDialog(false);
-      setNewCategory({
+      setNewItem({
         name: "",
         icon: "",
       });
+      refetch();
     } catch (error) {
       toast.error(error?.data?.message || "Failed to create category.");
     }
@@ -57,66 +78,107 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
 
   const handleSearchSubmit = () => {
     const lowercasedQuery = searchQuery.toLowerCase();
-    const filtered = categories.filter((category) =>
+    const filtered = categoriesData?.categories?.filter((category) =>
       Object.values(category).some((value) =>
         value != null && value.toString().toLowerCase().includes(lowercasedQuery)
       )
     );
-    setFilteredData(filtered);
+    setFilteredData(filtered || []);
     setOpenSearchDialog(false);
   };
 
   const handleAddDialogClose = () => {
-    setNewCategory({
+    setNewItem({
       name: "",
       icon: "",
     });
     setOpenAddDialog(false);
   };
 
-  const handleRefreshClick = async () => {
-    try {
-      await refetch(); // Trigger a refetch of the categories data
-    } catch (error) {
-      toast.error("Failed to refresh data");
+  const handleSearchDialogClose = () => {
+    setOpenSearchDialog(false);
+    // Clear search if dialog is closed without searching
+    if (!searchQuery) {
+      setFilteredData(categoriesData?.categories || []);
     }
   };
 
-  const handleEditCategory = (category) => {
-    setEditingCategory(category);
+  const handleRefreshClick = () => {
+    setSearchQuery("");
+    setFilteredData(categoriesData?.categories || []);
+    refetch();
   };
 
-  const handleUpdateCategory = async () => {
-    try {
-      await updateCategory(editingCategory);
-      setEditingCategory(null);
-    } catch (error) {
-      toast.error("Failed to update category");
+  const handleNextPage = () => {
+    if (currentPage < (categoriesData?.totalPages || 1)) {
+      setCurrentPage(prev => prev + 1);
     }
   };
 
-  const handleDeleteCategory = (categoryId) => {
-    try {
-      deleteCategory(categoryId);
-    } catch (error) {
-      toast.error("Failed to delete category");
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
     }
   };
 
-  // Update filtered data whenever the categories or search query changes
-  useEffect(() => {
-    if (searchQuery === "") {
-      setFilteredData(categories);
-    } else {
-      const lowercasedQuery = searchQuery.toLowerCase();
-      const filtered = categories.filter((category) =>
-        Object.values(category).some((value) =>
-          value != null && value.toString().toLowerCase().includes(lowercasedQuery)
+  const handleUpdateCategory = async (updatedItem) => {
+    if (!updatedItem.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+
+    try {
+      await updateCategory({
+        id: updatedItem.id,
+        name: updatedItem.name,
+        icon: updatedItem.icon
+      }).unwrap();
+      
+      // Update filtered data immediately
+      setFilteredData(prevData =>
+        prevData.map(item =>
+          item.id === updatedItem.id ? updatedItem : item
         )
       );
-      setFilteredData(filtered);
+      
+      refetch();
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to update category");
     }
-  }, [categories, searchQuery]);
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+      await deleteCategory(id).unwrap();
+      
+      // Update filtered data immediately
+      setFilteredData(prevData => {
+        const updatedData = prevData.filter(category => category.id !== id);
+        // If we've removed all items and we're not on the first page, go back
+        if (updatedData.length === 0 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        }
+        return updatedData;
+      });
+      
+      // Force a refetch to ensure data consistency
+      refetch();
+      
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to delete category");
+    }
+  };
+  
+  
+
+  useEffect(() => {
+    if (!isFetching && categoriesData?.categories) {
+      // Only update filtered data if we're not currently filtering
+      if (!searchQuery) {
+        setFilteredData(categoriesData.categories);
+      }
+    }
+  }, [isFetching, categoriesData, searchQuery]);
 
   if (isLoading) {
     return (
@@ -141,55 +203,62 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
         <Box sx={{ flex: 1, padding: theme.spacing(15), overflow: "auto" }}>
           <Buttons
             onAddClick={handleAddClick}
-            onSearchClick={handleSearchClick} // Button for opening the search dialog
+            onSearchClick={handleSearchClick}
             onRefreshClick={handleRefreshClick}
           />
-          <Tables
+          <CategoriesTable
             columns={columns}
-            data={filteredData} // Use filteredData to show search results
-            onEdit={handleEditCategory}
-            onDelete={handleDeleteCategory}
+            data={filteredData}
+            onEdit={handleUpdateCategory}
+            onDelete={(id) => handleDeleteCategory(id)}
+          />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={categoriesData?.totalPages || 1}
+            onNext={handleNextPage}
+            onPrev={handlePrevPage}
           />
         </Box>
       </Box>
       <Footer />
 
-      {/* Add Category Dialog */}
+      {/* Add Dialog */}
       <Dialog open={openAddDialog} onClose={handleAddDialogClose}>
         <DialogTitle>Add Category</DialogTitle>
         <DialogContent>
           <TextField
             margin="dense"
-            label="Category Name"
+            label="Name"
             type="text"
             fullWidth
-            value={newCategory.name}
-            onChange={(e) =>
-              setNewCategory({ ...newCategory, name: e.target.value })
-            }
+            required
+            value={newItem.name}
+            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
           />
           <TextField
             margin="dense"
-            label="Icon URL"
+            label="Icon"
             type="text"
             fullWidth
-            value={newCategory.icon}
-            onChange={(e) =>
-              setNewCategory({ ...newCategory, icon: e.target.value })
-            }
+            value={newItem.icon}
+            onChange={(e) => setNewItem({ ...newItem, icon: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleAddDialogClose}>Cancel</Button>
-          <Button onClick={handleAddSubmit} color="primary">
+          <Button 
+            onClick={handleAddSubmit} 
+            color="primary"
+            disabled={!newItem.name.trim()}
+          >
             Submit
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Search Category Dialog */}
-      <Dialog open={openSearchDialog} onClose={() => setOpenSearchDialog(false)}>
-        <DialogTitle>Search Categories</DialogTitle>
+      {/* Search Dialog */}
+      <Dialog open={openSearchDialog} onClose={handleSearchDialogClose}>
+        <DialogTitle>Search</DialogTitle>
         <DialogContent>
           <TextField
             margin="dense"
@@ -198,45 +267,17 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
             fullWidth
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSearchSubmit();
+              }
+            }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenSearchDialog(false)}>Cancel</Button>
+          <Button onClick={handleSearchDialogClose}>Cancel</Button>
           <Button onClick={handleSearchSubmit} color="primary">
             Search
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Category Dialog */}
-      <Dialog open={editingCategory !== null} onClose={() => setEditingCategory(null)}>
-        <DialogTitle>Edit Category</DialogTitle>
-        <DialogContent>
-          <TextField
-            margin="dense"
-            label="Category Name"
-            type="text"
-            fullWidth
-            value={editingCategory?.name || ""}
-            onChange={(e) =>
-              setEditingCategory({ ...editingCategory, name: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            label="Icon URL"
-            type="text"
-            fullWidth
-            value={editingCategory?.icon || ""}
-            onChange={(e) =>
-              setEditingCategory({ ...editingCategory, icon: e.target.value })
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditingCategory(null)}>Cancel</Button>
-          <Button onClick={handleUpdateCategory} color="primary">
-            Update
           </Button>
         </DialogActions>
       </Dialog>

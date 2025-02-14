@@ -16,23 +16,31 @@ export const categoriesApi = createApi({
   tagTypes: ['Category'],
   endpoints: (builder) => ({
     getCategories: builder.query({
-      query: () => '/',
-      providesTags: ['Category'],
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          await queryFulfilled;
-        } catch (error) {
-          toast.error(error?.data?.message || 'Failed to fetch categories');
-        }
+      query: (page = 1) => `/${page}`,
+      providesTags: (result) =>
+        result?.categories
+          ? [
+              ...result.categories.map(({ id }) => ({ type: 'Category', id })),
+              { type: 'Category', id: 'LIST' }
+            ]
+          : [{ type: 'Category', id: 'LIST' }],
+      transformResponse: (response) => {
+        return {
+          categories: response.categories || [],
+          totalPages: response.totalPages || 1,
+          currentPage: response.currentPage || 1,
+          totalCategories: response.totalCategories || 0
+        };
       },
     }),
+
     createCategory: builder.mutation({
       query: (categoryData) => ({
         url: '/',
         method: 'POST',
         body: categoryData,
       }),
-      invalidatesTags: ['Category'],
+      invalidatesTags: [{ type: 'Category', id: 'LIST' }],
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           await queryFulfilled;
@@ -42,14 +50,18 @@ export const categoriesApi = createApi({
         }
       },
     }),
+
     updateCategory: builder.mutation({
-      query: ({ route, ...categoryData }) => ({
-        url: `${route}`,
+      query: ({ id, ...categoryData }) => ({
+        url: `/${id}`,
         method: 'PUT',
         body: categoryData,
       }),
-      invalidatesTags: ['Category'],
-      async onQueryStarted(_, { queryFulfilled }) {
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Category', id },
+        { type: 'Category', id: 'LIST' }
+      ],
+      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
           toast.success('Category updated successfully');
@@ -58,21 +70,46 @@ export const categoriesApi = createApi({
         }
       },
     }),
+
     deleteCategory: builder.mutation({
-      query: (route) => ({
-        url: `${route}`,
+      query: (id) => ({
+        url: `/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Category'],
-      async onQueryStarted(_, { queryFulfilled }) {
+      invalidatesTags: [{ type: 'Category', id: 'LIST' }],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
         try {
+          // Optimistic update to remove category from the local state
+          dispatch(
+            categoriesApi.util.updateQueryData('getCategories', undefined, (draft) => {
+              if (draft?.categories) {
+                // Filter out the category that is being deleted
+                draft.categories = draft.categories.filter(category => category.id !== id);
+    
+                // Decrease the total category count
+                if (draft.totalCategories) {
+                  draft.totalCategories -= 1;
+                }
+              }
+            })
+          );
+    
+          // Wait for the deletion to complete on the server
           await queryFulfilled;
+    
+          // Show success toast after the successful deletion
           toast.success('Category deleted successfully');
         } catch (error) {
+          // Log the error and show an error toast message
+          console.error('Error deleting category:', error);
           toast.error(error?.data?.message || 'Failed to delete category');
+    
+          // Invalidate the cache to restore the category list if deletion fails
+          dispatch(categoriesApi.util.invalidateTags([{ type: 'Category', id: 'LIST' }]));
         }
       },
     }),
+    
   }),
 });
 

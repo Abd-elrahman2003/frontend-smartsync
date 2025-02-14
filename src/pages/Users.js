@@ -18,7 +18,15 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Search, UserPlus, Save, Lock } from "lucide-react";
+import {
+  Search,
+  UserPlus,
+  BadgePlus,
+  Save,
+  Lock,
+  BookOpen,
+  Trash,
+} from "lucide-react";
 import Sidebar from "../components/Shared/Sidebar";
 import Tables from "../components/Shared/Tables";
 import Header from "../components/Shared/Header";
@@ -35,12 +43,12 @@ import {
   useAssignPermissionsMutation,
 } from "../Redux/Featuress/permissions/permissionsApi";
 
-import { toast } from "react-toastify";
+import {
+  useGetRolesQuery,
+  useAssignRoleToUserMutation,
+} from "../Redux/Featuress/Roles/rolesApi";
 
-const roles = [
-  { value: "admin", label: "Admin" },
-  { value: "user", label: "User" },
-];
+import { toast } from "react-toastify";
 
 const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
   const theme = useTheme();
@@ -71,6 +79,9 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [filteredData, setFilteredData] = useState([]);
+  const [openRolesDialog, setOpenRolesDialog] = useState(false);
+  const [selectedUserRoles, setSelectedUserRoles] = useState([]);
+  const [availableRoles, setAvailableRoles] = useState([]);
 
   // Users API queries
   const {
@@ -84,13 +95,15 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
   const [createUser] = useCreateUserMutation();
   const [updateUser] = useUpdateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
+  const [assignRoleToUser] = useAssignRoleToUserMutation();
 
   // Permissions API queries
   const { data: formattedScreens, isLoading: formattedScreensLoading } =
     useGetFormattedScreensQuery(selectedUserId, { skip: !selectedUserId });
   const [assignPermissions] = useAssignPermissionsMutation();
 
-  // Update screenPermissions when formattedScreens data is loaded
+  const { data: roles = [], isLoading: rolesLoading } = useGetRolesQuery();
+
   useEffect(() => {
     if (formattedScreens) {
       const permissions = {};
@@ -121,7 +134,11 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
       "First Name": user.firstName,
       "Last Name": user.lastName,
       Email: user.email,
-      Roles: user.roles,
+      Roles: (
+        <IconButton onClick={() => handleOpenRolesDialog(user)}>
+          <BookOpen />
+        </IconButton>
+      ),
       Permissions: user.permissions,
       "Dashboard Permissions": user.dashboardPermissions,
       _original: user,
@@ -149,9 +166,9 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     setOpenPasswordDialog(true);
   };
   const handleLock = (user) => {
-    setSelectedUser(user); // Set the selected user
-    setSelectedUserId(user._original.id); // Set the selected user ID
-    setOpenPermissionsDialog(true); // Open the permissions dialog
+    setSelectedUser(user);
+    setSelectedUserId(user._original.id);
+    setOpenPermissionsDialog(true);
   };
 
   const toggleExpand = (route) => {
@@ -166,26 +183,28 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     const allChecked = screen.screens.every((sub) =>
       Object.values(newPermissions[sub.Route] || {}).every((perm) => perm)
     );
-  
+
     screen.screens.forEach((sub) => {
       newPermissions[sub.Route] = {};
       sub.access.forEach((access) => {
         newPermissions[sub.Route][access.action] = !allChecked;
       });
     });
-  
+
     setScreenPermissions(newPermissions);
   };
-  
+
   const toggleSubScreenPermissions = (subScreen) => {
     const newPermissions = { ...screenPermissions };
-    const allChecked = Object.values(newPermissions[subScreen.Route] || {}).every((perm) => perm);
-  
+    const allChecked = Object.values(
+      newPermissions[subScreen.Route] || {}
+    ).every((perm) => perm);
+
     newPermissions[subScreen.Route] = {};
     subScreen.access.forEach((access) => {
       newPermissions[subScreen.Route][access.action] = !allChecked;
     });
-  
+
     setScreenPermissions(newPermissions);
   };
 
@@ -209,24 +228,23 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
             .filter(([_, value]) => value)
             .map(([action]) => action),
         }))
-        .filter(screen => screen.actions.length > 0), // إزالة الشاشات بدون صلاحيات
+        .filter((screen) => screen.actions.length > 0),
     };
-  
+
     if (permissionsPayload.screensaccess.length === 0) {
       toast.error("At least one screen must have permissions.");
       return;
     }
-  
-    // 🔹 **التحقق من وجود VIEW في أي شاشة**
-    const hasViewPermission = permissionsPayload.screensaccess.some(screen =>
+
+    const hasViewPermission = permissionsPayload.screensaccess.some((screen) =>
       screen.actions.includes("VIEW")
     );
-  
+
     if (!hasViewPermission) {
       toast.error("At least one screen must have VIEW permission.");
       return;
     }
-  
+
     try {
       await assignPermissions(permissionsPayload).unwrap();
       setOpenPermissionsDialog(false);
@@ -235,8 +253,6 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
       toast.error(error?.data?.message || "Failed to update permissions.");
     }
   };
-  
-  
 
   const handleAddSubmit = async () => {
     if (newUser.password !== newUser.confirmPassword) {
@@ -325,6 +341,56 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     }
   };
 
+  const handleOpenRolesDialog = (user) => {
+    if (!user || (!user.id && !user._original?.id)) {
+      toast.error("Please select a valid user first.");
+      return;
+    }
+
+    setSelectedUser(user);
+    setSelectedUserId(user.id || user._original?.id);
+
+    setSelectedUserRoles(user.roles || []);
+    const assignedRoles = new Set(user.roles || []);
+    setAvailableRoles(roles.filter((role) => !assignedRoles.has(role.name)));
+
+    setOpenRolesDialog(true);
+  };
+
+  const handleCloseRolesDialog = () => {
+    setOpenRolesDialog(false);
+  };
+
+  const handleAddRoleToUser = (role) => {
+    setSelectedUserRoles((prevRoles) => [...prevRoles, role]);
+    setAvailableRoles((prevRoles) => prevRoles.filter((r) => r.id !== role.id));
+  };
+
+  const handleRemoveRoleFromUser = (role) => {
+    setSelectedUserRoles((prevRoles) =>
+      prevRoles.filter((r) => r.id !== role.id)
+    );
+    setAvailableRoles((prevRoles) => [...prevRoles, role]);
+  };
+
+  const handleSubmitRoles = async () => {
+    if (!selectedUserId) {
+      toast.error("Please select a user first.");
+      return;
+    }
+
+    const roleIds = selectedUserRoles.map((role) => role.id);
+
+    try {
+      await assignRoleToUser({ userId: selectedUserId, roleIds });
+
+      toast.success("Roles assigned successfully!");
+      setOpenRolesDialog(false);
+    } catch (error) {
+      toast.error("Failed to assign roles.");
+    }
+  };
+
   const renderActionButtons = (user) => {
     return (
       <Box sx={{ display: "flex", gap: 1 }}>
@@ -373,15 +439,31 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
                   label="Select Role"
                   onChange={(e) => setSelectedRole(e.target.value)}
                 >
-                  {roles.map((role) => (
-                    <MenuItem key={role.value} value={role.value}>
-                      {role.label}
+                  {rolesLoading ? (
+                    <MenuItem disabled>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          mt: 2,
+                        }}
+                      >
+                        <CircularProgress size={30} />
+                      </Box>{" "}
                     </MenuItem>
-                  ))}
+                  ) : roles.length > 0 ? (
+                    roles.map((role) => (
+                      <MenuItem key={role.id} value={role.id}>
+                        {role.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No roles available</MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Box>
-
+            ;
             <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
               <TextField
                 size="small"
@@ -580,142 +662,301 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
         </DialogActions>
       </Dialog>
 
+      {/* RolesDialog */}
+
+      <Dialog
+        open={openRolesDialog}
+        onClose={handleCloseRolesDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold", textAlign: "center" }}>
+          Manage Roles
+        </DialogTitle>
+        <DialogContent>
+          {/* أدوار المستخدم */}
+          {/* Your Roles */}
+          <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
+            Your Roles
+          </Typography>
+          <Box
+            sx={{
+              minHeight: 100,
+              backgroundColor: "#f1f1f1",
+              padding: 2,
+              borderRadius: 2,
+            }}
+          >
+            {selectedUserRoles.length > 0 ? (
+              selectedUserRoles.map((role) => (
+                <Box
+                  key={role.id}
+                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                >
+                  <Typography sx={{ fontSize: "16px", flexGrow: 1 }}>
+                    {role.name}
+                  </Typography>
+                  <IconButton
+                    onClick={() => handleRemoveRoleFromUser(role)}
+                    sx={{ color: "red" }}
+                  >
+                    <Trash size={18} color="#e60a0a" />
+                  </IconButton>
+                </Box>
+              ))
+            ) : (
+              <Typography sx={{ color: "gray" }}>No assigned roles</Typography>
+            )}
+          </Box>
+
+          {/* الأدوار المتاحة */}
+          <Typography variant="h6" sx={{ fontWeight: "bold", mt: 3, mb: 1 }}>
+            Available Roles
+          </Typography>
+          <Box
+            sx={{
+              minHeight: 100,
+              padding: 2,
+              borderRadius: 2,
+            }}
+          >
+            {rolesLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : availableRoles.length > 0 ? (
+              availableRoles.map((role) => (
+                <Box
+                  key={role.id}
+                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                >
+                  <Typography sx={{ fontSize: "16px", flexGrow: 1 }}>
+                    {role.name}
+                  </Typography>
+                  <IconButton
+                    onClick={() => handleAddRoleToUser(role)}
+                    sx={{ color: "green" }}
+                  >
+                    <BadgePlus size={20} color={theme.palette.primary.main} />
+                  </IconButton>
+                </Box>
+              ))
+            ) : (
+              <Typography sx={{ color: "gray" }}>No available roles</Typography>
+            )}
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ justifyContent: "space-between", px: 3 }}>
+          <Button
+            onClick={handleCloseRolesDialog}
+            color="secondary"
+            variant="outlined"
+          >
+            Close
+          </Button>
+          <Button
+            onClick={handleSubmitRoles}
+            color="primary"
+            variant="contained"
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Permissions Dialog */}
       <Dialog
-  open={openPermissionsDialog}
-  onClose={() => setOpenPermissionsDialog(false)}
-  maxWidth="sm"
-  fullWidth
-  sx={{
-    "& .MuiDialog-paper": {
-      borderRadius: "15px",
-      padding: "20px",
-      backgroundColor: "#fff",
-      boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.2)",
-    },
-  }}
->
-  <DialogTitle sx={{ fontWeight: "bold", fontSize: "20px", textAlign: "center" }}>
-    User Permissions
-  </DialogTitle>
+        open={openPermissionsDialog}
+        onClose={() => setOpenPermissionsDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: "15px",
+            padding: "20px",
+            backgroundColor: "#fff",
+            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.2)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{ fontWeight: "bold", fontSize: "20px", textAlign: "center" }}
+        >
+          User Permissions
+        </DialogTitle>
 
-  <DialogContent>
-    {formattedScreensLoading ? (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-        <CircularProgress />
-      </Box>
-    ) : (
-      <Box sx={{ mt: 2 }}>
-        {formattedScreens?.map((screen) => (
-          <Box
-            key={screen.Route}
-            sx={{ mb: 2, p: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-              {/* Checkbox لتحديد كل الصب-سكرينز */}
-              <Checkbox
-                checked={screen.screens.every((sub) =>
-                  Object.values(screenPermissions[sub.Route] || {}).every((perm) => perm)
-                )}
-                onChange={() => toggleAllPermissions(screen)}
-              />
-              
-              {/* Expand Button */}
-              <IconButton
-                onClick={() => toggleExpand(screen.Route)}
-                size="large"
-                sx={{ color: (theme) => theme.palette.primary.main, "&:hover": { backgroundColor: "unset" } }}
-              >
-                {expandedRoutes[screen.Route] ? "-" : "+"}
-              </IconButton>
-
-              <Typography variant="h6" sx={{ ml: 1, fontWeight: "bold", color: "#333" }}>
-                {screen.name}
-              </Typography>
+        <DialogContent>
+          {formattedScreensLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+              <CircularProgress />
             </Box>
-
-            {/* Sub-screens */}
-            {expandedRoutes[screen.Route] &&
-              screen.screens?.map((subScreen) => (
-                <Box key={subScreen.Route} sx={{ ml: 4, mt: 1 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-                    {/* Checkbox لتحديد جميع الصلاحيات لهذا الصب-سكرين */}
+          ) : (
+            <Box sx={{ mt: 2 }}>
+              {formattedScreens?.map((screen) => (
+                <Box
+                  key={screen.Route}
+                  sx={{
+                    mb: 2,
+                    p: 2,
+                    borderRadius: "8px",
+                    backgroundColor: "#f9f9f9",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {/* Checkbox لتحديد كل الصب-سكرينز */}
                     <Checkbox
-                      checked={Object.values(screenPermissions[subScreen.Route] || {}).every((perm) => perm)}
-                      onChange={() => toggleSubScreenPermissions(subScreen)}
+                      checked={screen.screens.every((sub) =>
+                        Object.values(screenPermissions[sub.Route] || {}).every(
+                          (perm) => perm
+                        )
+                      )}
+                      onChange={() => toggleAllPermissions(screen)}
                     />
 
-                    {/* Expand Button للصب-سكرين */}
+                    {/* Expand Button */}
                     <IconButton
-                      onClick={() => toggleExpand(subScreen.Route)}
-                      size="medium"
-                      sx={{ color: (theme) => theme.palette.primary.main, "&:hover": { backgroundColor: "unset" } }}
+                      onClick={() => toggleExpand(screen.Route)}
+                      size="large"
+                      sx={{
+                        color: (theme) => theme.palette.primary.main,
+                        "&:hover": { backgroundColor: "unset" },
+                      }}
                     >
-                      {expandedRoutes[subScreen.Route] ? "-" : "+"}
+                      {expandedRoutes[screen.Route] ? "-" : "+"}
                     </IconButton>
 
-                    <Typography variant="subtitle1" sx={{ ml: 1, fontWeight: "bold", color: "#333" }}>
-                      {subScreen.name}
+                    <Typography
+                      variant="h6"
+                      sx={{ ml: 1, fontWeight: "bold", color: "#333" }}
+                    >
+                      {screen.name}
                     </Typography>
                   </Box>
 
-                {/* عرض الصلاحيات عند التوسيع */}
-{expandedRoutes[subScreen.Route] && (
-  <Box sx={{ ml: 4, mt: 1, display: "flex", flexDirection: "column" }}>
-    {subScreen.access.map((access) => (
-      <FormControlLabel
-        key={`${subScreen.Route}-${access.action}`}
-        control={
-          <Checkbox
-            checked={screenPermissions[subScreen.Route]?.[access.action] || false}
-            onChange={() => handlePermissionChange(subScreen.Route, access.action)}
-            sx={{ color: (theme) => theme.palette.primary.main }}
-          />
-        }
-        label={access.action.charAt(0).toUpperCase() + access.action.slice(1)}
-      />
-    ))}
-  </Box>
-)}
+                  {/* Sub-screens */}
+                  {expandedRoutes[screen.Route] &&
+                    screen.screens?.map((subScreen) => (
+                      <Box key={subScreen.Route} sx={{ ml: 4, mt: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {/* Checkbox لتحديد جميع الصلاحيات لهذا الصب-سكرين */}
+                          <Checkbox
+                            checked={Object.values(
+                              screenPermissions[subScreen.Route] || {}
+                            ).every((perm) => perm)}
+                            onChange={() =>
+                              toggleSubScreenPermissions(subScreen)
+                            }
+                          />
 
+                          {/* Expand Button للصب-سكرين */}
+                          <IconButton
+                            onClick={() => toggleExpand(subScreen.Route)}
+                            size="medium"
+                            sx={{
+                              color: (theme) => theme.palette.primary.main,
+                              "&:hover": { backgroundColor: "unset" },
+                            }}
+                          >
+                            {expandedRoutes[subScreen.Route] ? "-" : "+"}
+                          </IconButton>
+
+                          <Typography
+                            variant="subtitle1"
+                            sx={{ ml: 1, fontWeight: "bold", color: "#333" }}
+                          >
+                            {subScreen.name}
+                          </Typography>
+                        </Box>
+
+                        {/* عرض الصلاحيات عند التوسيع */}
+                        {expandedRoutes[subScreen.Route] && (
+                          <Box
+                            sx={{
+                              ml: 4,
+                              mt: 1,
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                          >
+                            {subScreen.access.map((access) => (
+                              <FormControlLabel
+                                key={`${subScreen.Route}-${access.action}`}
+                                control={
+                                  <Checkbox
+                                    checked={
+                                      screenPermissions[subScreen.Route]?.[
+                                        access.action
+                                      ] || false
+                                    }
+                                    onChange={() =>
+                                      handlePermissionChange(
+                                        subScreen.Route,
+                                        access.action
+                                      )
+                                    }
+                                    sx={{
+                                      color: (theme) =>
+                                        theme.palette.primary.main,
+                                    }}
+                                  />
+                                }
+                                label={
+                                  access.action.charAt(0).toUpperCase() +
+                                  access.action.slice(1)
+                                }
+                              />
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
                 </Box>
               ))}
-          </Box>
-        ))}
-      </Box>
-    )}
-  </DialogContent>
+            </Box>
+          )}
+        </DialogContent>
 
-  <DialogActions sx={{ justifyContent: "center", gap: 2 }}>
-    <Button
-      onClick={() => setOpenPermissionsDialog(false)}
-      sx={{
-        backgroundColor: "#d32f2f",
-        color: "white",
-        borderRadius: "8px",
-        padding: "8px 20px",
-        "&:hover": { backgroundColor: "#b71c1c" },
-      }}
-    >
-      Cancel
-    </Button>
-    <Button
-      onClick={handlePermissionsSubmit}
-      disabled={formattedScreensLoading}
-      sx={{
-        backgroundColor: "#3f51b5",
-        color: "white",
-        borderRadius: "8px",
-        padding: "8px 20px",
-        "&:hover": { backgroundColor: "#3f51c4" },
-      }}
-    >
-      Save
-    </Button>
-  </DialogActions>
-</Dialog>
-
-
+        <DialogActions sx={{ justifyContent: "center", gap: 2 }}>
+          <Button
+            onClick={() => setOpenPermissionsDialog(false)}
+            sx={{
+              backgroundColor: "#d32f2f",
+              color: "white",
+              borderRadius: "8px",
+              padding: "8px 20px",
+              "&:hover": { backgroundColor: "#b71c1c" },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handlePermissionsSubmit}
+            disabled={formattedScreensLoading}
+            sx={{
+              backgroundColor: "#3f51b5",
+              color: "white",
+              borderRadius: "8px",
+              padding: "8px 20px",
+              "&:hover": { backgroundColor: "#3f51c4" },
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
