@@ -129,12 +129,10 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
   
     try {
       await updateCategory({
-        id: updatedItem.id,  // تأكد من تضمين الـ ID
         name: updatedItem.name,
         icon: updatedItem.icon
       }).unwrap();
       
-      // تحديث البيانات فوراً بعد التعديل
       setFilteredData(prevData =>
         prevData.map(item =>
           item.id === updatedItem.id ? updatedItem : item
