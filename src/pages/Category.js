@@ -126,26 +126,27 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
       toast.error("Category name is required");
       return;
     }
-
+  
     try {
       await updateCategory({
-        id: updatedItem.id,
+        id: updatedItem.id,  // تأكد من تضمين الـ ID
         name: updatedItem.name,
         icon: updatedItem.icon
       }).unwrap();
       
-      // Update filtered data immediately
+      // تحديث البيانات فوراً بعد التعديل
       setFilteredData(prevData =>
         prevData.map(item =>
           item.id === updatedItem.id ? updatedItem : item
         )
       );
-      
+  
       refetch();
     } catch (error) {
       toast.error(error?.data?.message || "Failed to update category");
     }
   };
+  
 
   const handleDeleteCategory = async (id) => {
     try {
