@@ -12,7 +12,9 @@ import {
   faChartLine,
   faUserCircle,
   faChevronDown,
-  faBox
+  faBox,
+  faTv,
+  faThLarge
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -60,7 +62,9 @@ const Sidebar = ({ isOpen }) => {
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
     { icon: faUserCircle, text: 'Screens', href: '/Screen' },
-    { icon: faBox, text: 'Products', href: '/products' }
+    { icon: faBox, text: 'Products', href: '/products' },
+    { icon: faThLarge, text: 'Categories', href: '/category' }
+
   ];
   return (
     <Box
