@@ -1,4 +1,4 @@
-// Category.js
+//Category.js
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -17,6 +17,7 @@ import Header from "../components/Shared/Header";
 import Footer from "../components/Shared/Footer";
 import Buttons from "../components/Shared/Buttons";
 import Pagination from "../components/Common/Pagination";
+import SearchDialog from "../components/Shared/SearchDialog";
 import {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
@@ -28,16 +29,19 @@ import { toast } from "react-toastify";
 const Category = ({ toggleSidebar, isSidebarOpen }) => {
   const theme = useTheme();
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [openSearchDialog, setOpenSearchDialog] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [newItem, setNewItem] = useState({
     name: "",
     icon: "",
   });
-  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    id: '',
+    name: '',
+    icon: ''
+  });
   const [filteredData, setFilteredData] = useState([]);
 
-  
   const { 
     data: categoriesData = {}, 
     isLoading, 
@@ -54,6 +58,15 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
   const columns = ["id", "name", "icon"];
 
   const handleAddClick = () => setOpenAddDialog(true);
+  
+
+  const handleViewCategory = (category) => {
+    setFilteredData([category]); // Show only the selected category in the main table
+  };
+
+  const handleResetView = () => {
+    setFilteredData(categoriesData?.categories || []);
+  };
 
   const handleAddSubmit = async () => {
     if (!newItem.name.trim()) {
@@ -74,111 +87,40 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
     }
   };
 
-  const handleSearchClick = () => setOpenSearchDialog(true);
-
-  const handleSearchSubmit = () => {
-    const lowercasedQuery = searchQuery.toLowerCase();
-    const filtered = categoriesData?.categories?.filter((category) =>
-      Object.values(category).some((value) =>
-        value != null && value.toString().toLowerCase().includes(lowercasedQuery)
-      )
-    );
-    setFilteredData(filtered || []);
-    setOpenSearchDialog(false);
-  };
-
   const handleAddDialogClose = () => {
-    setNewItem({
-      name: "",
-      icon: "",
-    });
     setOpenAddDialog(false);
+    setNewItem({ name: "", icon: "" });
+  };
+  
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSearchDialogClose = () => {
-    setOpenSearchDialog(false);
-    // Clear search if dialog is closed without searching
-    if (!searchQuery) {
-      setFilteredData(categoriesData?.categories || []);
-    }
+  const handleSearch = () => {
+    const filtered = categoriesData?.categories?.filter(category => {
+      const matchId = !filters.id || category.id.toString() === filters.id;
+      const matchName = !filters.name || category.name.toLowerCase().includes(filters.name.toLowerCase());
+      const matchIcon = !filters.icon || category.icon.toLowerCase().includes(filters.icon.toLowerCase());
+      return matchId && matchName && matchIcon;
+    });
+    
+    setFilteredData(filtered || []);
+    setSearchDialogOpen(false);
   };
+  
 
-  const handleRefreshClick = () => {
-    setSearchQuery("");
+  const handleClearFilters = () => {
+    setFilters({ id: '', name: '', icon: '' });
     setFilteredData(categoriesData?.categories || []);
-    refetch();
+    setSearchDialogOpen(false);
   };
-
-  const handleNextPage = () => {
-    if (currentPage < (categoriesData?.totalPages || 1)) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
-
-  const handleUpdateCategory = async (updatedItem) => {
-    if (!updatedItem.name.trim()) {
-      toast.error("Category name is required");
-      return;
-    }
-
-    try {
-      await updateCategory({
-        id: updatedItem.id,
-        name: updatedItem.name,
-        icon: updatedItem.icon
-      }).unwrap();
-      
-      // Update filtered data immediately
-      setFilteredData(prevData =>
-        prevData.map(item =>
-          item.id === updatedItem.id ? updatedItem : item
-        )
-      );
-      
-      refetch();
-    } catch (error) {
-      toast.error(error?.data?.message || "Failed to update category");
-    }
-  };
-
-  const handleDeleteCategory = async (id) => {
-    try {
-      await deleteCategory(id).unwrap();
-      
-      // Update filtered data immediately
-      setFilteredData(prevData => {
-        const updatedData = prevData.filter(category => category.id !== id);
-        // If we've removed all items and we're not on the first page, go back
-        if (updatedData.length === 0 && currentPage > 1) {
-          setCurrentPage(prev => prev - 1);
-        }
-        return updatedData;
-      });
-      
-      // Force a refetch to ensure data consistency
-      refetch();
-      
-    } catch (error) {
-      toast.error(error?.data?.message || "Failed to delete category");
-    }
-  };
-  
-  
 
   useEffect(() => {
     if (!isFetching && categoriesData?.categories) {
-      // Only update filtered data if we're not currently filtering
-      if (!searchQuery) {
-        setFilteredData(categoriesData.categories);
-      }
+      setFilteredData(categoriesData.categories);
     }
-  }, [isFetching, categoriesData, searchQuery]);
+  }, [isFetching, categoriesData]);
 
   if (isLoading) {
     return (
@@ -189,40 +131,53 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
   }
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        backgroundColor: theme.palette.background.default,
-      }}
-    >
+    <Box sx={{
+      display: "flex",
+      flexDirection: "column",
+      minHeight: "100vh",
+      backgroundColor: theme.palette.background.default,
+    }}>
       <Header toggleSidebar={toggleSidebar} />
       <Box sx={{ display: "flex", flex: 1 }}>
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <Box sx={{ flex: 1, padding: theme.spacing(15), overflow: "auto" }}>
           <Buttons
             onAddClick={handleAddClick}
-            onSearchClick={handleSearchClick}
-            onRefreshClick={handleRefreshClick}
+            onSearchClick={() => setSearchDialogOpen(true)}
+            onRefreshClick={refetch}
           />
+            {filteredData.length === 1 && (
+  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+    <Button
+      variant="contained"
+      onClick={handleResetView}
+      sx={{
+        backgroundColor: "#EB5800",
+        color: "white",
+        "&:hover": { backgroundColor: "#c94700" }, // لون أغمق عند التحويم
+      }}
+    >
+      Show All Categories
+    </Button>
+  </Box>
+            )}
           <CategoriesTable
             columns={columns}
             data={filteredData}
-            onEdit={handleUpdateCategory}
-            onDelete={(id) => handleDeleteCategory(id)}
+            onEdit={updateCategory}
+            onDelete={deleteCategory}
           />
           <Pagination
             currentPage={currentPage}
             totalPages={categoriesData?.totalPages || 1}
-            onNext={handleNextPage}
-            onPrev={handlePrevPage}
+            onNext={() => setCurrentPage(prev => prev + 1)}
+            onPrev={() => setCurrentPage(prev => prev - 1)}
           />
         </Box>
       </Box>
       <Footer />
 
-      {/* Add Dialog */}
+{/* Add Dialog */}
       <Dialog open={openAddDialog} onClose={handleAddDialogClose}>
         <DialogTitle>Add Category</DialogTitle>
         <DialogContent>
@@ -257,32 +212,18 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
       </Dialog>
 
       {/* Search Dialog */}
-      <Dialog open={openSearchDialog} onClose={handleSearchDialogClose}>
-        <DialogTitle>Search</DialogTitle>
-        <DialogContent>
-          <TextField
-            margin="dense"
-            label="Search Query"
-            type="text"
-            fullWidth
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSearchSubmit();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSearchDialogClose}>Cancel</Button>
-          <Button onClick={handleSearchSubmit} color="primary">
-            Search
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <SearchDialog
+        open={searchDialogOpen}
+        onClose={() => setSearchDialogOpen(false)}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onSearch={handleSearch}
+        onClear={handleClearFilters}
+        categories={categoriesData?.categories || []}
+        onViewCategory={handleViewCategory}
+      />
     </Box>
   );
 };
 
-export default Category;
+export default Category;  

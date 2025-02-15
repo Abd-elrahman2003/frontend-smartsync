@@ -59,7 +59,8 @@ const Sidebar = ({ isOpen }) => {
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
     { icon: faTv, text: 'Screens', href: '/Screen' },
-    { icon: faThLarge, text: 'Categories', href: '/category' }
+    { icon: faThLarge, text: 'Categories', href: '/category' },
+
 
   ];
 

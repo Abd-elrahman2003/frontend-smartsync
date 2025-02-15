@@ -13,7 +13,6 @@ import UserProfile from "./components/Auth/UserProfile";
 import Screen from "./pages/Screen";
 import Users from "./pages/Users";
 import Category from "./pages/Category";
-
 import Roles from "./pages/Roles";
 
 
@@ -51,7 +50,7 @@ const App = () => {
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-
+        
 
         
 

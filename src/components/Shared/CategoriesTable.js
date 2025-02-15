@@ -99,7 +99,7 @@ const CategoriesTable = ({ columns, data, onEdit, onDelete, onLock }) => {
       <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, rowData: {} })}>
         <DialogTitle>Edit Item</DialogTitle>
         <DialogContent>
-          {columns.map((col) => (
+          {columns.filter((col) => col !== "id").map((col) => (
             <TextField
               key={col}
               label={col}
