@@ -20,7 +20,6 @@ export const usersApi = createApi({
       query: () => '/',
       providesTags: ['Users'],
       transformResponse: (response) => {
-        console.log('API Response:', response);
         return response;
       },
     }),
@@ -33,7 +32,6 @@ export const usersApi = createApi({
       }),
       invalidatesTags: ['Users'],
       transformResponse: (response) => {
-        console.log('Create Response:', response);
         return response;
       },
       async onQueryStarted(_, { queryFulfilled }) {

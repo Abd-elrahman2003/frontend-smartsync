@@ -1,3 +1,5 @@
+/* eslint-disable eqeqeq */
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText, Collapse } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,7 +11,8 @@ import {
   faWarehouse,
   faChartLine,
   faUserCircle,
-  faChevronDown
+  faChevronDown,
+  faBox
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -56,9 +59,9 @@ const Sidebar = ({ isOpen }) => {
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
-    { icon: faUserCircle, text: 'Screens', href: '/Screen' }
+    { icon: faUserCircle, text: 'Screens', href: '/Screen' },
+    { icon: faBox, text: 'Products', href: '/products' }
   ];
-
   return (
     <Box
       sx={{

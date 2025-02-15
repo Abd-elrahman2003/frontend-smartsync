@@ -13,6 +13,7 @@ import UserProfile from "./components/Auth/UserProfile";
 import Screen from "./pages/Screen";
 import Users from "./pages/Users";
 import Roles from "./pages/Roles";
+import Products from "./pages/Products";
 
 
 const App = () => {
@@ -48,6 +49,8 @@ const App = () => {
         <Route path="/Screen" element={<Screen toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+
 
 
         
