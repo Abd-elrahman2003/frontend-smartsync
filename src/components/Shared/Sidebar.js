@@ -9,7 +9,10 @@ import {
   faWarehouse,
   faChartLine,
   faUserCircle,
-  faChevronDown
+  faChevronDown, 
+  faTv,
+  faThLarge,
+  faStore
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -55,7 +58,11 @@ const Sidebar = ({ isOpen }) => {
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
-    { icon: faUserCircle, text: 'Screens', href: '/Screen' }
+    { icon: faTv, text: 'Screens', href: '/Screen' },
+    { icon: faThLarge, text: 'Categories', href: '/category' },
+    { icon: faStore, text: 'Store', href: '/store' }
+
+
   ];
 
   return (
