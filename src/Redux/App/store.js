@@ -5,6 +5,7 @@ import { usersApi } from '../Featuress/users/usersApi';
 import { permissionsApi } from '../Featuress/permissions/permissionsApi';
 import { rolesApi } from '../Featuress/Roles/rolesApi';
 import { categoriesApi } from '../Featuress/categories/categoriesApi';
+import { storeApi } from '../Featuress/Store/storeApi';
 
 import authReducer from '../Featuress/auth/authSlice';
 import screensReducer from '../Featuress/screens/screensSlice';
@@ -12,6 +13,7 @@ import usersReducer from '../Featuress/users/usersSlice';
 import permissionsReducer from '../Featuress/permissions/permissionsSlice';
 import rolesReducer from '../Featuress/Roles/rolesSlice';
 import categoriesReducer from '../Featuress/categories/categoriesSlice';
+import storeReducer from '../Featuress/Store/storeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,7 +24,8 @@ export const store = configureStore({
     [permissionsApi.reducerPath]: permissionsApi.reducer,
     [rolesApi.reducerPath]: rolesApi.reducer,
     [categoriesApi.reducerPath]: categoriesApi.reducer,
-    
+    [storeApi.reducerPath]: storeApi.reducer,
+
     // Slice reducers
     auth: authReducer,
     screens: screensReducer,
@@ -30,6 +33,7 @@ export const store = configureStore({
     permissions: permissionsReducer,
     roles: rolesReducer,
     categories: categoriesReducer,
+    store: storeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -38,8 +42,9 @@ export const store = configureStore({
       usersApi.middleware,
       permissionsApi.middleware,
       rolesApi.middleware,
-      categoriesApi.middleware
+      categoriesApi.middleware,
+      storeApi.middleware,
     ),
 });
 
-export default store;
+export default store;

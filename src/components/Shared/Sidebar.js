@@ -11,7 +11,8 @@ import {
   faUserCircle,
   faChevronDown, 
   faTv,
-  faThLarge
+  faThLarge,
+  faStore
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -60,6 +61,7 @@ const Sidebar = ({ isOpen }) => {
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
+    { icon: faStore, text: 'Store', href: '/store' }
 
 
   ];

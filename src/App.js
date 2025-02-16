@@ -14,7 +14,7 @@ import Screen from "./pages/Screen";
 import Users from "./pages/Users";
 import Category from "./pages/Category";
 import Roles from "./pages/Roles";
-
+import Store from "./pages/Store";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -50,7 +50,7 @@ const App = () => {
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-        
+        <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
 
         
 
