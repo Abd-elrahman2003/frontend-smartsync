@@ -49,6 +49,8 @@ const App = () => {
         <Route path="/Screen" element={<Screen toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/locations" element={<Locations toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+
 
         
 

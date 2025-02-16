@@ -26,7 +26,8 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
 
   // Handle edit dialog submission
   const handleEditSubmit = () => {
-    onEdit(editDialog.rowData);
+    console.log(editDialog)
+    onEdit(editDialog.route, editDialog.rowData);
     setEditDialog({ open: false, rowData: {} });
   };
 
