@@ -41,7 +41,7 @@ const Category = ({ toggleSidebar, isSidebarOpen }) => {
     icon: ''
   });
   const [filteredData, setFilteredData] = useState([]);
-
+  
   const { 
     data: categoriesData = {}, 
     isLoading, 
