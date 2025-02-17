@@ -49,11 +49,8 @@ const App = () => {
         <Route path="/profile" element={<UserProfile toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/Screen" element={<Screen toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-<<<<<<< HEAD
         <Route path="/locations" element={<Locations toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-=======
         <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
->>>>>>> b36e76e111befe2ad2e6a1162e6c71d2f2d41a0e
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
 

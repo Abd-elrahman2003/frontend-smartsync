@@ -6,16 +6,13 @@ import { permissionsApi } from '../Featuress/permissions/permissionsApi';
 import { rolesApi } from '../Featuress/Roles/rolesApi';
 import { categoriesApi } from '../Featuress/categories/categoriesApi';
 import { storeApi } from '../Featuress/Store/storeApi';
+import { locationsApi } from '../Featuress/locations/locationApis';
 
 import authReducer from '../Featuress/auth/authSlice';
 import screensReducer from '../Featuress/screens/screensSlice';
 import locationReducer from '../Featuress/locations/locationSlice';
 import usersReducer from '../Featuress/users/usersSlice';
 import permissionsReducer from '../Featuress/permissions/permissionsSlice';
-import { permissionsApi } from '../Featuress/permissions/permissionsApi';
-import rolesReducer from '../Featuress/Roles/rolesSlice'
-import { rolesApi } from '../Featuress/Roles/rolesApi';
-import { locationsApi } from '../Featuress/locations/locationApis';
 import rolesReducer from '../Featuress/Roles/rolesSlice';
 import categoriesReducer from '../Featuress/categories/categoriesSlice';
 import storeReducer from '../Featuress/Store/storeSlice';
@@ -29,7 +26,6 @@ export const store = configureStore({
     [permissionsApi.reducerPath]: permissionsApi.reducer,
     [rolesApi.reducerPath]:rolesApi.reducer,
     [locationsApi.reducerPath]:locationsApi.reducer,
-    [rolesApi.reducerPath]: rolesApi.reducer,
     [categoriesApi.reducerPath]: categoriesApi.reducer,
     [storeApi.reducerPath]: storeApi.reducer,
 
@@ -40,7 +36,6 @@ export const store = configureStore({
     permissions: permissionsReducer,
     roles:rolesReducer,
     locations:locationReducer,
-    roles: rolesReducer,
     categories: categoriesReducer,
     store: storeReducer,
   },
