@@ -15,11 +15,16 @@ import {
   TextField,
   Button,
   IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
 } from "@mui/material";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useTheme } from "@mui/material/styles";
 
-const StoreTable = ({ columns, data, onEdit, onDelete }) => {
+const StoreTable = ({ columns, data, onEdit, onDelete, locations = [] }) => {
   const theme = useTheme();
   const [editDialog, setEditDialog] = useState({ open: false, rowData: {} });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, rowIndex: null });
@@ -124,19 +129,32 @@ const StoreTable = ({ columns, data, onEdit, onDelete }) => {
               }))
             }
           />
-          <TextField
-            label="Location ID"
-            fullWidth
-            margin="normal"
-            type="number"
-            value={editDialog.rowData.locationsId || ""}
-            onChange={(e) =>
-              setEditDialog((prev) => ({
-                ...prev,
-                rowData: { ...prev.rowData, locationsId: e.target.value },
-              }))
-            }
-          />
+          <FormControl fullWidth margin="normal" required>
+            <InputLabel id="edit-location-select-label">Location</InputLabel>
+            <Select
+              labelId="edit-location-select-label"
+              id="edit-location-select"
+              value={editDialog.rowData.locationsId || ""}
+              label="Location"
+              onChange={(e) =>
+                setEditDialog((prev) => ({
+                  ...prev,
+                  rowData: { ...prev.rowData, locationsId: e.target.value },
+                }))
+              }
+            >
+              {locations.length === 0 ? (
+                <MenuItem disabled>No locations found</MenuItem>
+              ) : (
+                locations.map((location) => (
+                  <MenuItem key={location.id} value={location.id}>
+                    {location.name || location.id}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+            {!editDialog.rowData.locationsId && <FormHelperText>Required</FormHelperText>}
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialog({ open: false, rowData: {} })} color="secondary">
@@ -169,4 +187,4 @@ const StoreTable = ({ columns, data, onEdit, onDelete }) => {
   );
 };
 
-export default StoreTable;
+export default StoreTable;

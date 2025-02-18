@@ -1,4 +1,3 @@
-//Store.js
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -9,6 +8,11 @@ import {
   TextField,
   Button,
   CircularProgress,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  FormHelperText,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Sidebar from "../components/Shared/Sidebar";
@@ -23,6 +27,7 @@ import {
   useUpdateStoreMutation,
   useDeleteStoreMutation,
 } from "../Redux/Featuress/Store/storeApi";
+import { useGetLocationQuery } from "../Redux/Featuress/locations/locationApis";
 import { toast } from "react-toastify";
 
 const Store = ({ toggleSidebar, isSidebarOpen }) => {
@@ -47,6 +52,14 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
   } = useGetStoresQuery(currentPage, {
     refetchOnMountOrArgChange: true
   });
+
+  // Using your existing locationsApi 
+  const { data: locationsData = {}, isLoading: isLocationsLoading } = useGetLocationQuery({
+    page: 1
+  });
+
+  // Extract the locations array
+  const locations = locationsData?.locations || [];
 
   const [createStore] = useCreateStoreMutation();
   const [updateStore] = useUpdateStoreMutation();
@@ -207,6 +220,7 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
             data={filteredData}
             onEdit={handleUpdateStore}
             onDelete={(id) => handleDeleteStore(id)}
+            locations={locations}
           />
           <Pagination
             currentPage={currentPage}
@@ -249,15 +263,29 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
             value={newItem.phone}
             onChange={(e) => setNewItem({ ...newItem, phone: e.target.value })}
           />
-          <TextField
-            margin="dense"
-            label="Location ID"
-            type="number"
-            fullWidth
-            required
-            value={newItem.locationsId}
-            onChange={(e) => setNewItem({ ...newItem, locationsId: e.target.value })}
-          />
+          <FormControl fullWidth margin="dense" required>
+            <InputLabel id="location-select-label">Location</InputLabel>
+            <Select
+              labelId="location-select-label"
+              id="location-select"
+              value={newItem.locationsId}
+              label="Location"
+              onChange={(e) => setNewItem({ ...newItem, locationsId: e.target.value })}
+            >
+              {isLocationsLoading ? (
+                <MenuItem disabled>Loading locations...</MenuItem>
+              ) : locations.length === 0 ? (
+                <MenuItem disabled>No locations found</MenuItem>
+              ) : (
+                locations.map((location) => (
+                  <MenuItem key={location.id} value={location.id}>
+                    {location.name || location.id}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+            {!newItem.locationsId && <FormHelperText>Required</FormHelperText>}
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleAddDialogClose}>Cancel</Button>
@@ -300,4 +328,4 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
   );
 };
 
-export default Store;
+export default Store;
