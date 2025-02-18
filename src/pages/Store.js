@@ -8,11 +8,10 @@ import {
   TextField,
   Button,
   CircularProgress,
+  FormControl,
+  InputLabel,
   Select,
   MenuItem,
-  InputLabel,
-  FormControl,
-  FormHelperText,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Sidebar from "../components/Shared/Sidebar";
@@ -43,6 +42,7 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState([]);
+  const [locationsPage, setLocationsPage] = useState(1);
 
   const { 
     data: storesData = {}, 
@@ -53,19 +53,22 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
     refetchOnMountOrArgChange: true
   });
 
-  // Using your existing locationsApi 
-  const { data: locationsData = {}, isLoading: isLocationsLoading } = useGetLocationQuery({
-    page: 1
+  // Fetch locations for the dropdown
+  const { 
+    data: locationsData = [], 
+    isLoading: isLoadingLocations 
+  } = useGetLocationQuery({ page: locationsPage }, {
+    refetchOnMountOrArgChange: true
   });
-
-  // Extract the locations array
-  const locations = locationsData?.locations || [];
 
   const [createStore] = useCreateStoreMutation();
   const [updateStore] = useUpdateStoreMutation();
   const [deleteStore] = useDeleteStoreMutation();
 
   const columns = ["id", "name", "address", "phone", "locationsId"];
+
+  // Ensure locations data is an array
+  const locations = Array.isArray(locationsData) ? locationsData : [];
 
   const handleAddClick = () => setOpenAddDialog(true);
 
@@ -101,6 +104,13 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
     );
     setFilteredData(filtered || []);
     setOpenSearchDialog(false);
+  };
+
+  const handleLocationChange = (e) => {
+    setNewItem({
+      ...newItem,
+      locationsId: e.target.value
+    });
   };
 
   const handleAddDialogClose = () => {
@@ -220,7 +230,6 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
             data={filteredData}
             onEdit={handleUpdateStore}
             onDelete={(id) => handleDeleteStore(id)}
-            locations={locations}
           />
           <Pagination
             currentPage={currentPage}
@@ -232,7 +241,7 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
       </Box>
       <Footer />
 
-      {/* Add Dialog */}
+      {/* Add Dialog with Location Dropdown */}
       <Dialog open={openAddDialog} onClose={handleAddDialogClose}>
         <DialogTitle>Add Store</DialogTitle>
         <DialogContent>
@@ -263,6 +272,8 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
             value={newItem.phone}
             onChange={(e) => setNewItem({ ...newItem, phone: e.target.value })}
           />
+          
+          {/* Location Dropdown */}
           <FormControl fullWidth margin="dense" required>
             <InputLabel id="location-select-label">Location</InputLabel>
             <Select
@@ -270,21 +281,26 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
               id="location-select"
               value={newItem.locationsId}
               label="Location"
-              onChange={(e) => setNewItem({ ...newItem, locationsId: e.target.value })}
+              onChange={handleLocationChange}
+              disabled={isLoadingLocations}
             >
-              {isLocationsLoading ? (
-                <MenuItem disabled>Loading locations...</MenuItem>
-              ) : locations.length === 0 ? (
-                <MenuItem disabled>No locations found</MenuItem>
+              {isLoadingLocations ? (
+                <MenuItem value="">
+                  <em>Loading locations...</em>
+                </MenuItem>
               ) : (
-                locations.map((location) => (
-                  <MenuItem key={location.id} value={location.id}>
-                    {location.name || location.id}
-                  </MenuItem>
-                ))
+                [
+                  <MenuItem key="none" value="">
+                    <em>Select a location</em>
+                  </MenuItem>,
+                  ...locations.map((location) => (
+                    <MenuItem key={location.id} value={location.id}>
+                      {location.name}
+                    </MenuItem>
+                  ))
+                ]
               )}
             </Select>
-            {!newItem.locationsId && <FormHelperText>Required</FormHelperText>}
           </FormControl>
         </DialogContent>
         <DialogActions>
