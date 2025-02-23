@@ -99,23 +99,21 @@ const CategoriesTable = ({ columns, data, onEdit, onDelete, onLock }) => {
       <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, rowData: {} })}>
         <DialogTitle>Edit Item</DialogTitle>
         <DialogContent>
-          {columns
-            .filter((col) => col !== "id") // استبعاد id من الحقول القابلة للتعديل
-            .map((col) => (
-              <TextField
-                key={col}
-                label={col}
-                fullWidth
-                margin="normal"
-                value={editDialog.rowData[col] || ""}
-                onChange={(e) =>
-                  setEditDialog((prev) => ({
-                    ...prev,
-                    rowData: { ...prev.rowData, [col]: e.target.value },
-                  }))
-                }
-              />
-            ))}
+          {columns.map((col) => (
+            <TextField
+              key={col}
+              label={col}
+              fullWidth
+              margin="normal"
+              value={editDialog.rowData[col] || ""}
+              onChange={(e) =>
+                setEditDialog((prev) => ({
+                  ...prev,
+                  rowData: { ...prev.rowData, [col]: e.target.value },
+                }))
+              }
+            />
+          ))}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialog({ open: false, rowData: {} })} color="secondary">
@@ -148,4 +146,4 @@ const CategoriesTable = ({ columns, data, onEdit, onDelete, onLock }) => {
   );
 };
 
-export default CategoriesTable;
+export default CategoriesTable; 

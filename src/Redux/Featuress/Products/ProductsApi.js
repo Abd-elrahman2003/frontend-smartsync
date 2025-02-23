@@ -1,4 +1,3 @@
-// productsApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { toast } from "react-toastify";
 
@@ -21,12 +20,12 @@ export const productsApi = createApi({
   endpoints: (builder) => ({
     // Get Products
     getProducts: builder.query({
-      query: (pageNumber) => `/products/${pageNumber}`,    
+      query: (pageNumber) => `/products/${pageNumber}`,
       transformResponse: (response) => ({
         products: response.products,
         totalProducts: response.totalProducts,
         totalPages: response.totalPages,
-        currentPage: response.currentPage
+        currentPage: response.currentPage,
       }),
       providesTags: ["Products"],
     }),
@@ -39,13 +38,28 @@ export const productsApi = createApi({
         categories: response.categories,
         totalCategories: response.totalCategories,
         totalPages: response.totalPages,
-        currentPage: response.currentPage
+        currentPage: response.currentPage,
       }),
     }),
 
     // Get Components of a Product
     getProductComponents: builder.query({
-      query: ({ productId, pageNumber }) => `/products/${productId}/components?page=${pageNumber}`,
+      query: ({ productId, pageNumber }) => `/products/${productId}/${pageNumber}`,
+      transformResponse: (response) => ({
+        components: response.getComponents || [],
+        totalComponents: response.totalComponents || 0,
+        totalPages: response.totalPages || 1,
+        currentPage: response.currentPage
+      }),
+      providesTags: ["Products"],
+    }),
+
+    // Get Product Images
+    getProductImages: builder.query({
+      query: (productId) => `/products/images/${productId}`,
+      transformResponse: (response) => ({
+        images: response.images || []
+      }),
       providesTags: ["Products"],
     }),
 
@@ -60,7 +74,6 @@ export const productsApi = createApi({
       async onQueryStarted(productData, { queryFulfilled }) {
         try {
           await queryFulfilled;
-          toast.success(`Product "${productData.get('name')}" created successfully!`);
         } catch (error) {
           toast.error(error?.data?.message || "Failed to create product.");
         }
@@ -71,7 +84,7 @@ export const productsApi = createApi({
     updateProduct: builder.mutation({
       query: ({ productId, updatedData }) => ({
         url: `/products/${productId}`,
-        method: "PATCH",
+        method: "PUT",
         body: updatedData,
       }),
       invalidatesTags: ["Products"],
@@ -86,18 +99,28 @@ export const productsApi = createApi({
       invalidatesTags: ["Products"],
     }),
 
-    // Add Image to Product
-    addProductImage: builder.mutation({
-      query: ({ productId, image }) => {
+    // Add Product Images
+    addProductImages: builder.mutation({
+      query: ({ productId, images }) => {
         const formData = new FormData();
-        formData.append("image", image);
+        for (let i = 0; i < images.length; i++) {
+          formData.append("images", images[i]);
+        }
         return {
-          url: `/products/${productId}/images`,
+          url: `/products/images/${productId}`,
           method: "POST",
-          body: formData,
+          body: formData
         };
       },
       invalidatesTags: ["Products"],
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          toast.success("Images uploaded successfully!");
+        } catch (error) {
+          toast.error(error?.data?.message || "Failed to upload images.");
+        }
+      },
     }),
 
     // Delete Product Image
@@ -107,21 +130,38 @@ export const productsApi = createApi({
         method: "DELETE",
       }),
       invalidatesTags: ["Products"],
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          toast.success("Image deleted successfully!");
+        } catch (error) {
+          toast.error(error?.data?.message || "Failed to delete image.");
+        }
+      },
     }),
 
     // Assign Component to Product
     assignProductComponent: builder.mutation({
-      query: ({ productId, componentId }) => ({
-        url: `/products/${productId}/components/${componentId}`,
+      query: ({ productId, componentId, quantity, timeExpentency }) => ({
+        url: `/products/${productId}/${componentId}`,
         method: "POST",
+        body: { quantity, timeExpentency },
       }),
       invalidatesTags: ["Products"],
+      async onQueryStarted({ productId, componentId }, { queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          toast.success("Component assigned successfully!");
+        } catch (error) {
+          toast.error(error?.data?.message || "Failed to assign component.");
+        }
+      },
     }),
 
     // Remove Component from Product
     deleteProductComponent: builder.mutation({
       query: ({ productId, componentId }) => ({
-        url: `/products/${productId}/components/${componentId}`,
+        url: `/products/${productId}/${componentId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Products"],
@@ -133,10 +173,11 @@ export const {
   useGetProductsQuery,
   useGetCategoriesQuery,
   useGetProductComponentsQuery,
+  useGetProductImagesQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
-  useAddProductImageMutation,
+  useAddProductImagesMutation,
   useDeleteProductImageMutation,
   useAssignProductComponentMutation,
   useDeleteProductComponentMutation,
