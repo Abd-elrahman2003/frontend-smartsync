@@ -6,14 +6,18 @@ import { permissionsApi } from '../Featuress/permissions/permissionsApi';
 import { rolesApi } from '../Featuress/Roles/rolesApi';
 import { productsApi } from '../Featuress/Products/ProductsApi'; // إضافة الـ API الخاص بالمنتجات
 import { categoriesApi } from '../Featuress/categories/categoriesApi';
+import { storeApi } from '../Featuress/Store/storeApi';
+import { locationsApi } from '../Featuress/locations/locationApis';
 
 import authReducer from '../Featuress/auth/authSlice';
 import screensReducer from '../Featuress/screens/screensSlice';
+import locationReducer from '../Featuress/locations/locationSlice';
 import usersReducer from '../Featuress/users/usersSlice';
 import permissionsReducer from '../Featuress/permissions/permissionsSlice';
 import rolesReducer from '../Featuress/Roles/rolesSlice';
 import productsReducer from '../Featuress/Products/ProductsSlice'; 
 import categoriesReducer from '../Featuress/categories/categoriesSlice';
+import storeReducer from '../Featuress/Store/storeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,20 +26,24 @@ export const store = configureStore({
     [screensApi.reducerPath]: screensApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [permissionsApi.reducerPath]: permissionsApi.reducer,
-    [rolesApi.reducerPath]: rolesApi.reducer,
     [productsApi.reducerPath]: productsApi.reducer, 
 
     // Slices
+    [rolesApi.reducerPath]:rolesApi.reducer,
+    [locationsApi.reducerPath]:locationsApi.reducer,
     [categoriesApi.reducerPath]: categoriesApi.reducer,
-    
+    [storeApi.reducerPath]: storeApi.reducer,
+
     // Slice reducers
     auth: authReducer,
     screens: screensReducer,
     users: usersReducer,
     permissions: permissionsReducer,
-    roles: rolesReducer,
     products: productsReducer, 
+    roles:rolesReducer,
+    locations:locationReducer,
     categories: categoriesReducer,
+    store: storeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -45,8 +53,10 @@ export const store = configureStore({
       permissionsApi.middleware,
       rolesApi.middleware,
       productsApi.middleware ,
-      categoriesApi.middleware
+      locationsApi.middleware,
+      categoriesApi.middleware,
+      storeApi.middleware,
     ),
 });
 
-export default store;
+export default store;

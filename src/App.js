@@ -11,12 +11,16 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserProfile from "./components/Auth/UserProfile";
 import Screen from "./pages/Screen";
+import Locations from "./pages/Locations";
 import Users from "./pages/Users";
 import Category from "./pages/Category";
-
 import Roles from "./pages/Roles";
+<<<<<<< HEAD
 import Products from "./pages/Products";
 
+=======
+import Store from "./pages/Store";
+>>>>>>> 6dfb69c1eeb7be7e77e05495ea3962c9e7a4444e
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -50,11 +54,13 @@ const App = () => {
         <Route path="/profile" element={<UserProfile toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/Screen" element={<Screen toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/users" element={<Users toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/locations" element={<Locations toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
 
 
+        <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
 
         
 

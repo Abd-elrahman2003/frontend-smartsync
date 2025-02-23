@@ -14,7 +14,8 @@ import {
   faChevronDown,
   faBox,
   faTv,
-  faThLarge
+  faThLarge,
+  faStore
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -54,9 +55,8 @@ const Sidebar = ({ isOpen }) => {
     { icon: faGear, text: 'Settings', href: '/settings' },
     { icon: faWarehouse, text: 'Warehouse', href: '/warehouse', 
       children: [
-        { icon: faCircle, text: 'Users', href: '/users' },
-        { icon: faCircle, text: 'Roles', href: '/roles' },
-        { icon: faCircle, text: 'System Logs', href: '/system-logs' },
+        { icon: faCircle, text: 'items', href: '/users' },
+        { icon: faCircle, text: 'locations', href: '/locations' },
       ],
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
@@ -64,6 +64,10 @@ const Sidebar = ({ isOpen }) => {
     { icon: faUserCircle, text: 'Screens', href: '/Screen' },
     { icon: faBox, text: 'Products', href: '/products' },
     { icon: faThLarge, text: 'Categories', href: '/category' }
+    { icon: faTv, text: 'Screens', href: '/Screen' },
+    { icon: faThLarge, text: 'Categories', href: '/category' },
+    { icon: faStore, text: 'Store', href: '/store' }
+
 
   ];
   return (
