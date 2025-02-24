@@ -116,30 +116,13 @@ export const productsApi = createApi({
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           await queryFulfilled;
-          toast.success("Images uploaded successfully!");
         } catch (error) {
           toast.error(error?.data?.message || "Failed to upload images.");
         }
       },
     }),
 
-    // Delete Product Image
-    deleteProductImage: builder.mutation({
-      query: (imageId) => ({
-        url: `/products/images/${imageId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Products"],
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          toast.success("Image deleted successfully!");
-        } catch (error) {
-          toast.error(error?.data?.message || "Failed to delete image.");
-        }
-      },
-    }),
-
+   
     // Assign Component to Product
     assignProductComponent: builder.mutation({
       query: ({ productId, componentId, quantity, timeExpentency }) => ({

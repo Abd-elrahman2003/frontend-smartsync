@@ -15,12 +15,9 @@ import Locations from "./pages/Locations";
 import Users from "./pages/Users";
 import Category from "./pages/Category";
 import Roles from "./pages/Roles";
-<<<<<<< HEAD
 import Products from "./pages/Products";
 
-=======
 import Store from "./pages/Store";
->>>>>>> 6dfb69c1eeb7be7e77e05495ea3962c9e7a4444e
 
 const App = () => {
   const [user, setUser] = useState(null);

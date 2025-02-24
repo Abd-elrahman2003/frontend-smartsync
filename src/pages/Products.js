@@ -40,11 +40,11 @@ import {
   useAssignProductComponentMutation,
   useDeleteProductComponentMutation,
   useAddProductImagesMutation,
-  useDeleteProductImageMutation,
   useGetProductImagesQuery,
   useGetCategoriesQuery,
 } from "../Redux/Featuress/Products/ProductsApi";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import imageCompression from "browser-image-compression"; // لضغط الصور
 
 const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const theme = useTheme();
@@ -54,18 +54,16 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const [selectedPage, setSelectedPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedProductId, setSelectedProductId] = useState(null);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [updatedProduct, setUpdatedProduct] = useState({});
   const [fileName, setFileName] = useState("");
-  const [openUploadDialog, setOpenUploadDialog] = useState(false);
-  const [files, setFiles] = useState([]);
   const [components, setComponents] = useState([]);
   const [availableComponents, setAvailableComponents] = useState([]);
-  const [loadingComponents, setLoadingComponents] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]); // For actual files
   const [selectedProductImages, setSelectedProductImages] = useState([]);
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // حالة التحميل عند الحفظ
 
   const [formData, setFormData] = useState({
     name: "",
@@ -120,17 +118,18 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       );
       setAvailableComponents(filteredComponents);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProduct]);
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId;
-  
+
     const fetchImages = async () => {
       if (selectedProductId) {
         setIsLoadingImages(true);
         setSelectedProductImages([]);
-  
+
         try {
           const { data } = await refetchImages();
           if (isMounted) {
@@ -148,17 +147,16 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
         }
       }
     };
-  
+
     // تأخير الطلب بمقدار 300 مللي ثانية
     timeoutId = setTimeout(fetchImages, 300);
-  
+
     // دالة التنظيف
     return () => {
       isMounted = false;
       clearTimeout(timeoutId); // إلغاء التأخير إذا تم تغيير selectedProductId
     };
   }, [selectedProductId, refetchImages]);
-
 
   useEffect(() => {
     return () => {
@@ -177,7 +175,6 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const [assignProductComponent] = useAssignProductComponentMutation();
   const [deleteProductComponent] = useDeleteProductComponentMutation();
   const [addProductImages] = useAddProductImagesMutation();
-  const [deleteProductImage] = useDeleteProductImageMutation();
 
   const columns = [
     "ID",
@@ -217,17 +214,6 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
     }));
   };
 
-  const handleOpenUploadDialog = (product) => {
-    setSelectedProduct(product);
-    setOpenUploadDialog(true);
-  };
-
-  const handleCloseUploadDialog = () => {
-    setOpenUploadDialog(false);
-    setFiles([]);
-    setSelectedProduct(null);
-  };
-
   const handleColorsChange = (event, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -235,51 +221,83 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
     }));
   };
 
-  const handleUploadImages = async () => {
-    
-    if (files.length > 3) {
-      toast.error("Maximum 3 images allowed.");
+  const handleFilePhotosChange = async (e) => {
+    const files = Array.from(e.target.files);
+    const totalImagesAfterAdd = selectedProductImages.length + files.length;
+
+    if (totalImagesAfterAdd > 3) {
+      toast.error("Maximum 3 images allowed in total");
       return;
     }
-  
-    try {
-      await addProductImages({
-        productId: selectedProductId,
-        images: files,
-      }).unwrap();
-  
-      toast.success("Images uploaded successfully!");
-  
-      refetchImages();
-  
-      setSelectedProductImages((prev) => [
-        ...prev,
-        ...files.map((file) => URL.createObjectURL(file)), 
-      ]);
-  
-      setFiles([]);
-    } catch (error) {
-      toast.error("Failed to upload images.");
-      console.error("Error uploading images:", error);
-    }
-  };
-  const handleFilePhotosChange = (e) => {
-    const selectedFiles = Array.from(e.target.files).slice(0, 3); 
-    if (selectedFiles.length > 3) {
-      toast.error("Maximum 3 images allowed");
-      return;
-    }
-    setFiles(selectedFiles); 
+
+    // Store the actual files
+    setSelectedFiles(files);
+
+    // Create preview URLs
+    const newImageUrls = files.map((file) => URL.createObjectURL(file));
+    setSelectedProductImages((prevImages) => [...prevImages, ...newImageUrls]);
   };
 
-  const handleFileChange = (e) => {
+  const handleSaveImages = async () => {
+    // بعد الحذف، سنرسل الصور المتبقية فقط
+    setIsSaving(true);
+    try {
+      console.log("Updating Images:", selectedFiles);
+  
+      const response = await addProductImages({
+        productId: selectedProductId,
+        images: selectedFiles, // سيتم إرسال الصور المتبقية فقط
+      }).unwrap();
+  
+      console.log("Update Response:", response);
+  
+      if (response.message === "Product images added successfully") {
+        toast.success("Images updated successfully!");
+        
+        const { data } = await refetchImages();
+  
+        console.log("Fetched updated images:", data);
+  
+        if (data?.images) {
+          setSelectedProductImages((prevImages) => [...prevImages, ...data.images]);
+        }
+        
+        setSelectedFiles([]);
+      }
+      
+    } catch (error) {
+      console.error("Update Error:", error);
+      toast.error(error?.data?.message || "Failed to update images");
+    } finally {
+      setIsSaving(false);
+    }
+};
+  const handleDeleteImage = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setSelectedProductImages((prev) => {
+      const newUrls = prev.filter((_, i) => i !== index);
+      return newUrls;
+    });
+  };
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFileName(file.name);
-      setFormData((prev) => ({
-        ...prev,
-        thumbFile: file,
-      }));
+      try {
+        const options = {
+          maxSizeMB: 1, // الحد الأقصى لحجم الملف (1MB)
+          maxWidthOrHeight: 1024, // الحد الأقصى للعرض أو الارتفاع
+          useWebWorker: true, // استخدام Web Worker لتحسين الأداء
+        };
+        const compressedFile = await imageCompression(file, options);
+        setFileName(compressedFile.name);
+        setFormData((prev) => ({
+          ...prev,
+          thumbFile: compressedFile,
+        }));
+      } catch (error) {
+        console.error("Error compressing image:", error);
+        toast.error("Failed to compress image.");
+      }
     }
   };
 
@@ -291,7 +309,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       description: "",
       type: "",
       model: "",
-      colors: ["", ""],
+      colors: [],
       thumbFile: null,
     });
     setSelectedCategory(null);
@@ -315,6 +333,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   };
 
   const handleAddSubmit = async () => {
+    setIsSaving(true); // تفعيل حالة التحميل
     try {
       const submitFormData = new FormData();
       submitFormData.append("name", formData.name);
@@ -339,10 +358,13 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
     } catch (error) {
       toast.error("Failed to create product.");
       console.error("Error creating product:", error);
+    } finally {
+      setIsSaving(false); // تعطيل حالة التحميل
     }
   };
 
   const handleEditSubmit = async () => {
+    setIsSaving(true); // تفعيل حالة التحميل
     try {
       await updateProduct({
         productId: selectedProduct.id,
@@ -353,6 +375,8 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       refetchProducts();
     } catch (error) {
       toast.error("Failed to update product.");
+    } finally {
+      setIsSaving(false); // تعطيل حالة التحميل
     }
   };
 
@@ -388,8 +412,8 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
             id: comp.component?.id,
             componentId: comp.componentId || comp.component?.id,
             name: comp.component?.name || comp.name,
-            quantity: comp.quantity || 1,
-            timeExpentency: comp.timeExpentency || 0,
+            quantity: comp.quantity || "",
+            timeExpentency: comp.timeExpentency || "",
             component: comp.component || {
               id: comp.componentId,
               name: comp.name,
@@ -445,8 +469,8 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
             name: component.name,
           },
           name: component.name,
-          quantity: 1,
-          timeExpentency: 0,
+          quantity: "",
+          timeExpentency: "",
         },
       ];
     });
@@ -467,8 +491,8 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
         assignProductComponent({
           productId: selectedProduct.id,
           componentId: component.componentId || component.id,
-          quantity: component.quantity || 1,
-          timeExpentency: component.timeExpentency || 0,
+          quantity: component.quantity || "",
+          timeExpentency: component.timeExpentency || "",
         }).unwrap()
       );
 
@@ -538,11 +562,11 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const handleViewImages = async (product) => {
     setSelectedProductId(product.id); // تعيين ID المنتج المحدد
     setImagePreviewOpen(true); // فتح الدايلوج
-  
+
     // مسح الصور القديمة فورًا
     setSelectedProductImages([]);
     setIsLoadingImages(true); // تفعيل حالة التحميل
-  
+
     try {
       const { data } = await refetchImages(); // إعادة تحميل الصور
       setSelectedProductImages(data?.images || []); // تحديث الصور الجديدة
@@ -720,7 +744,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                                 src={row.thumbLink}
                                 alt="Product Thumbnail"
                                 style={{
-                                  width: "200px",
+                                  width: "100px",
                                   height: "100%",
                                   borderRadius: "4px",
                                   objectFit: "cover",
@@ -764,12 +788,18 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                             </IconButton>
                           </TableCell>
                           <TableCell>
-                            <IconButton
-                              color="primary"
-                              onClick={() => handleOpenComponentsDialog(row)}
-                            >
-                              <Package />
-                            </IconButton>
+                            {row.type === "WIFI" || row.type === "CAMERA" ? (
+                              <IconButton
+                                color="primary"
+                                onClick={() => handleOpenComponentsDialog(row)}
+                              >
+                                <Package />
+                              </IconButton>
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">
+                                Not Available
+                              </Typography>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -941,8 +971,13 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddSubmit} variant="contained" color="primary">
-            Save
+          <Button
+            onClick={handleAddSubmit}
+            variant="contained"
+            color="primary"
+            disabled={isSaving} // تعطيل الزر أثناء التحميل
+          >
+            {isSaving ? <CircularProgress size={24} /> : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -983,13 +1018,20 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
               }
             />
             <TextField
+              select
               label="Type"
               fullWidth
               value={updatedProduct.type || ""}
               onChange={(e) =>
                 setUpdatedProduct({ ...updatedProduct, type: e.target.value })
               }
-            />
+            >
+              {typeOptions.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
             <Autocomplete
               options={categories}
               getOptionLabel={(option) => option.name}
@@ -1017,8 +1059,9 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
             onClick={handleEditSubmit}
             variant="contained"
             color="primary"
+            disabled={isSaving} // تعطيل الزر أثناء التحميل
           >
-            Save
+            {isSaving ? <CircularProgress size={24} /> : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1248,20 +1291,53 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       </Dialog>
 
       {/* Image Preview Dialog */}
+      {/* Image Preview Dialog */}
       <Dialog
         open={imagePreviewOpen}
-        onClose={() => setImagePreviewOpen(false)}
+        onClose={() => {
+          setImagePreviewOpen(false);
+          setSelectedFiles([]);
+          setSelectedProductImages([]);
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>Product Images</DialogTitle>
         <DialogContent>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Upload up to 3 images for your product. Each image should be less
+              than 5MB.
+            </Typography>
+          </Box>
+
+          {/* File Upload Section */}
+          <Box sx={{ mb: 3 }}>
+            <Button
+              color="primary"
+              variant="contained"
+              component="label"
+              startIcon={<Upload />}
+              disabled={selectedProductImages.length >= 3}
+            >
+              Choose Images
+              <input
+                type="file"
+                hidden
+                onChange={handleFilePhotosChange}
+                accept="image/*"
+                multiple
+                max={3}
+              />
+            </Button>
+          </Box>
+
+          {/* Images Preview Grid */}
           <Box
             sx={{
-              display: "flex",
+              display: "grid",
               gap: 2,
-              flexWrap: "wrap",
-              justifyContent: "center",
+              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
               p: 2,
             }}
           >
@@ -1272,50 +1348,105 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                   justifyContent: "center",
                   alignItems: "center",
                   height: 200,
+                  gridColumn: "1 / -1",
                 }}
               >
-                <CircularProgress size={40} />
+                <CircularProgress />
               </Box>
             ) : selectedProductImages.length > 0 ? (
               selectedProductImages.map((image, index) => (
-                <img
+                <Paper
                   key={index}
-                  src={image}
-                  alt={`Product ${index + 1}`}
-                  style={{
-                    width: "200px",
-                    height: "200px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
+                  elevation={3}
+                  sx={{
+                    position: "relative",
+                    aspectRatio: "1",
+                    overflow: "hidden",
+                    borderRadius: 2,
                   }}
-                />
+                >
+                  <img
+                    src={image}
+                    alt={`Product ${index + 1}`}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      p: 0.5,
+                      bgcolor: "rgba(0, 0, 0, 0.5)",
+                      borderRadius: "0 0 0 8px",
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteImage(index)}
+                      sx={{
+                        color: "white",
+                        "&:hover": {
+                          bgcolor: "rgba(255, 255, 255, 0.2)",
+                        },
+                      }}
+                    >
+                      <FaTrash />
+                    </IconButton>
+                  </Box>
+                </Paper>
               ))
             ) : (
-              <Typography>No images available.</Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                  gridColumn: "1 / -1",
+                  border: "2px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography color="text.secondary">
+                  No images available. Click "Choose Images" to upload.
+                </Typography>
+              </Box>
             )}
           </Box>
         </DialogContent>
 
-        <DialogActions>
-          {/* زر رفع الصور */}
-          <Button
-  onClick={handleUploadImages}
-  color="primary"
-  variant="contained"
-  component="label" 
-  startIcon={<UploadIcon />} 
->
-  Upload Images
-  <input
-    type="file"
-    hidden 
-    onChange={handleFilePhotosChange} 
-    accept="image/*"
-    multiple 
-  />
-</Button>
-          <Button onClick={() => setImagePreviewOpen(false)}>Close</Button>
-        </DialogActions>
+        <DialogActions sx={{ p: 2.5 }}>
+  <Box sx={{ flex: 1 }}>
+    <Typography variant="caption" color="text.secondary">
+      {selectedProductImages.length}/3 images uploaded
+    </Typography>
+  </Box>
+  <Button
+    onClick={() => {
+      setImagePreviewOpen(false);
+      setSelectedFiles([]);
+      setSelectedProductImages([]);
+    }}
+  >
+    Cancel
+  </Button>
+  <Button
+    onClick={handleSaveImages}
+    variant="contained"
+    color="primary"
+    // نحذف الشرط disabled={selectedFiles.length === 0}
+    // ونضيف شرط للتحقق من وجود تغييرات
+    disabled={isSaving}
+    startIcon={isSaving && <CircularProgress size={20} />}
+  >
+    {isSaving ? "Saving..." : "Save Images"}
+  </Button>
+</DialogActions>
       </Dialog>
     </Box>
   );

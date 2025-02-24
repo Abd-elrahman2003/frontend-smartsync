@@ -63,7 +63,6 @@ const Sidebar = ({ isOpen }) => {
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
     { icon: faUserCircle, text: 'Screens', href: '/Screen' },
     { icon: faBox, text: 'Products', href: '/products' },
-    { icon: faThLarge, text: 'Categories', href: '/category' }
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
     { icon: faStore, text: 'Store', href: '/store' }
@@ -74,7 +73,7 @@ const Sidebar = ({ isOpen }) => {
     <Box
       sx={{
         width: isOpen ? 250 : 60,
-        height: '100vh',
+        height: '130vh',
         backgroundColor: theme.palette.background.paper,
         boxShadow: '2px 0 6px rgba(0, 0, 0, 0.1)',
         display: 'flex',
