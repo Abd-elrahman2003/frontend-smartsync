@@ -122,7 +122,21 @@ export const productsApi = createApi({
       },
     }),
 
-   
+   // Delete Product Image
+   deleteProductImage: builder.mutation({
+    query: (imageId) => ({
+      url: `/products/images/${imageId}`, // يعتمد فقط على imageId
+      method: "DELETE",
+    }),
+    invalidatesTags: ["ProductImages"],
+    async onQueryStarted(_, { queryFulfilled }) {
+      try {
+        await queryFulfilled;
+      } catch (error) {
+        toast.error(error?.data?.message || "Failed to delete image.");
+      }
+    },
+  }),
     // Assign Component to Product
     assignProductComponent: builder.mutation({
       query: ({ productId, componentId, quantity, timeExpentency }) => ({
