@@ -2,8 +2,6 @@ import { configureStore } from '@reduxjs/toolkit';
 import { authApi } from '../Featuress/auth/authApi';
 import { screensApi } from '../Featuress/screens/screensApi';
 import { usersApi } from '../Featuress/users/usersApi';
-import { permissionsApi } from '../Featuress/permissions/permissionsApi';
-import { rolesApi } from '../Featuress/Roles/rolesApi';
 import { categoriesApi } from '../Featuress/categories/categoriesApi';
 import { storeApi } from '../Featuress/Store/storeApi';
 
@@ -13,7 +11,6 @@ import locationReducer from '../Featuress/locations/locationSlice';
 import usersReducer from '../Featuress/users/usersSlice';
 import permissionsReducer from '../Featuress/permissions/permissionsSlice';
 import { permissionsApi } from '../Featuress/permissions/permissionsApi';
-import rolesReducer from '../Featuress/Roles/rolesSlice'
 import { rolesApi } from '../Featuress/Roles/rolesApi';
 import { locationsApi } from '../Featuress/locations/locationApis';
 import rolesReducer from '../Featuress/Roles/rolesSlice';
