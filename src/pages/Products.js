@@ -44,8 +44,17 @@ import {
   useDeleteProductImageMutation,
   useGetCategoriesQuery,
 } from "../Redux/Featuress/Products/ProductsApi";
+
+import {
+  useAssignCameraMutation,
+  useGetCameraAssignmentQuery,
+  useDeleteCameraAssignmentMutation,
+  useAssignWifiMutation,
+  useGetWifiAssignmentQuery,
+  useDeleteWifiAssignmentMutation,
+} from "../Redux/Featuress/Iot/IotApi";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import imageCompression from "browser-image-compression"; 
+import imageCompression from "browser-image-compression";
 
 const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const theme = useTheme();
@@ -59,12 +68,39 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const [fileName, setFileName] = useState("");
   const [components, setComponents] = useState([]);
   const [availableComponents, setAvailableComponents] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]); 
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedProductImages, setSelectedProductImages] = useState([]);
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); 
+  const [isSaving, setIsSaving] = useState(false);
+  const [openAttachmentsDialog, setOpenAttachmentsDialog] = useState(false);
+  const [selectedProductForAttachments, setSelectedProductForAttachments] =
+    useState(null);
+
+    const[isEditingAttachments,setIsEditingAttachments]=useState()
+
+  const [showCameraData, setShowCameraData] = useState(false);
+  const [showWifiData, setShowWifiData] = useState(false);
+  const [hasCameraData, setHasCameraData] = useState(false);
+const [hasWifiData, setHasWifiData] = useState(false);
+
+
+  // فورم داتا للكاميرا
+  const [cameraFormData, setCameraFormData] = useState({
+    length: "",
+    angle: "",
+    resolution: "",
+    storage: "",
+    amber: "",
+  });
+
+  // فورم داتا للواي فاي
+  const [wifiFormData, setWifiFormData] = useState({
+    wallSensitivity: "",
+    maxLength: "",
+    scopes: [],
+  });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -108,6 +144,20 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       skip: !selectedProductId,
     });
 
+  const { data: cameraData, refetch: refetchCameraData } =
+    useGetCameraAssignmentQuery(selectedProductForAttachments?.id, {
+      skip:
+        !selectedProductForAttachments ||
+        selectedProductForAttachments?.type !== "CAMERA",
+    });
+
+  const { data: wifiData, refetch: refetchWifiData } =
+    useGetWifiAssignmentQuery(selectedProductForAttachments?.id, {
+      skip:
+        !selectedProductForAttachments ||
+        selectedProductForAttachments?.type !== "WIFI",
+    });
+
   const products = useMemo(() => productsData?.products || [], [productsData]);
   const totalPages = productsData?.totalPages || 1;
   const categories = categoriesData.categories || [];
@@ -123,9 +173,8 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       );
       setAvailableComponents(filteredComponents);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProduct, components]); // 🔹 أضف components هنا
-  
 
   useEffect(() => {
     let isMounted = true;
@@ -163,6 +212,8 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
     };
   }, [selectedProductId, refetchImages]);
 
+
+ 
   const [createProduct] = useCreateProductMutation();
   const [updateProduct] = useUpdateProductMutation();
   const [deleteProduct] = useDeleteProductMutation();
@@ -170,6 +221,10 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   const [deleteProductComponent] = useDeleteProductComponentMutation();
   const [addProductImages] = useAddProductImagesMutation();
   const [deleteProductImage] = useDeleteProductImageMutation();
+  const [assignCamera] = useAssignCameraMutation();
+  const [assignWifi] = useAssignWifiMutation();
+  const [deleteCamera] = useDeleteCameraAssignmentMutation();
+  const [deleteWifi] = useDeleteWifiAssignmentMutation();
 
   const columns = [
     "ID",
@@ -179,6 +234,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
     "Type",
     "Category",
     "Product Image",
+    "Attachments",
   ];
 
   const formatProductData = (productsData) => {
@@ -234,6 +290,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       ...newImageUrls.map((url) => ({ imageUrl: url })),
     ]);
   };
+
   const handleSaveImages = async () => {
     setIsSaving(true);
     try {
@@ -260,35 +317,32 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
 
   const handleDeleteImage = async (imageId) => {
     try {
-  
       await deleteProductImage(imageId).unwrap();
-  
+
       setSelectedProductImages((prevImages) =>
         prevImages.filter((image) => image.id !== imageId)
       );
-  
+
       if (selectedProductImages.length - 1 === 0) {
         setTimeout(() => {
           setSelectedProductImages([]);
         }, 100);
       }
-  
+
       toast.success("Image deleted successfully!");
     } catch (error) {
       console.error("Failed to delete image:", error);
       toast.error(error?.data?.message || "Failed to delete image.");
     }
   };
-  
-  
-  
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       try {
         const options = {
           maxSizeMB: 1,
-          maxWidthOrHeight: 1024, 
+          maxWidthOrHeight: 1024,
           useWebWorker: true,
         };
         const compressedFile = await imageCompression(file, options);
@@ -336,7 +390,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
   };
 
   const handleAddSubmit = async () => {
-    setIsSaving(true); 
+    setIsSaving(true);
     try {
       const submitFormData = new FormData();
       submitFormData.append("name", formData.name);
@@ -358,11 +412,24 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       setOpenAddDialog(false);
 
       await refetchProducts();
+
+      // التحقق من نوع المنتج وفتح دايلوج الإرفاق المناسب
+      if (formData.type === "CAMERA") {        
+        setSelectedProductForAttachments({
+          id: formData.id,
+          type: "CAMERA",
+        });
+      } else if (formData.type === "WIFI") {
+        setSelectedProductForAttachments({
+          id: formData.id,
+          type: "WIFI",
+        });
+      }
     } catch (error) {
       toast.error("Failed to create product.");
       console.error("Error creating product:", error);
     } finally {
-      setIsSaving(false); 
+      setIsSaving(false);
     }
   };
 
@@ -379,7 +446,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
     } catch (error) {
       toast.error("Failed to update product.");
     } finally {
-      setIsSaving(false); 
+      setIsSaving(false);
     }
   };
 
@@ -486,9 +553,9 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       toast.error("Please select at least one component");
       return;
     }
-  
+
     setIsLoading(true);
-  
+
     try {
       const promises = components.map((component) =>
         assignProductComponent({
@@ -498,15 +565,15 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
           timeExpentency: component.timeExpentency || "",
         }).unwrap()
       );
-  
+
       await Promise.all(promises);
-  
+
       const newComponents = [...selectedProduct.components, ...components];
       setSelectedProduct({ ...selectedProduct, components: newComponents });
-  
+
       const updatedData = await refetchProductComponents().unwrap();
       console.log("Updated Data:", updatedData);
-  
+
       if (updatedData?.getComponents) {
         const updatedComponents = updatedData.getComponents.map((comp) => ({
           id: comp.componentId,
@@ -516,19 +583,19 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
           timeExpentency: comp.timeExpentency,
           component: comp.component,
         }));
-  
+
         setComponents(updatedComponents);
-  
+
         const newAvailable = products.filter((p) => {
           if (p.id === selectedProduct.id) return false;
           return !updatedComponents.some(
             (comp) => comp.componentId === p.id || comp.component?.id === p.id
           );
         });
-  
+
         setAvailableComponents(newAvailable);
       }
-  
+
       toast.success("Components added successfully!");
     } catch (error) {
       console.error("Error adding components:", error);
@@ -537,7 +604,6 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       setIsLoading(false);
     }
   };
-  
 
   const handleDeleteComponent = async (productId, componentId) => {
     console.log("🔍 Deleting Component:", { productId, componentId });
@@ -564,20 +630,19 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
 
   const handleViewImages = async (product) => {
     setSelectedProductId(product.id);
-    setImagePreviewOpen(true); 
+    setImagePreviewOpen(true);
 
-    // مسح الصور القديمة فورًا
     setSelectedProductImages([]);
-    setIsLoadingImages(true); 
+    setIsLoadingImages(true);
 
     try {
-      const { data } = await refetchImages(); 
-      setSelectedProductImages(data?.images || []); 
+      const { data } = await refetchImages();
+      setSelectedProductImages(data?.images || []);
     } catch (error) {
       console.error("Error fetching product images:", error);
-      setSelectedProductImages([]); 
+      setSelectedProductImages([]);
     } finally {
-      setIsLoadingImages(false); 
+      setIsLoadingImages(false);
     }
   };
 
@@ -608,6 +673,188 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
       </div>,
       { autoClose: false, closeOnClick: false }
     );
+  };
+
+  const handleOpenAttachmentsDialog = async (product) => {
+    setIsLoading(true);
+    setSelectedProductForAttachments(product);
+    let fetchedData = null;
+  
+    try {
+      if (product.type === "CAMERA") {
+        await refetchCameraData().unwrap(); 
+        setTimeout(() => {
+          fetchedData = cameraData; 
+          if (fetchedData) {
+            setHasCameraData(true);
+            setCameraFormData({
+              length: fetchedData.length || "",
+              angle: fetchedData.angle || "",
+              resolution: fetchedData.resolution || "",
+              storage: fetchedData.storage || "",
+              amber: fetchedData.amber || "",
+            });
+            setOpenAttachmentsDialog(true); 
+          }
+        }, 500); 
+      } else if (product.type === "WIFI") {
+        await refetchWifiData().unwrap();
+        setTimeout(() => {
+          fetchedData = wifiData;
+          if (fetchedData) {
+            setHasWifiData(true);
+            setWifiFormData({
+              wallSensitivity: fetchedData.wallSensitivity || "",
+              maxLength: fetchedData.maxLength || "",
+              scopes: fetchedData.scopes || [],
+            });
+            setOpenAttachmentsDialog(true);
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error fetching attachments data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  
+  const handleCloseAttachmentsDialog = () => {
+    setOpenAttachmentsDialog(false);
+
+    setCameraFormData({
+      length: "",
+      angle: "",
+      resolution: "",
+      storage: "",
+      amber: "",
+    });
+    setWifiFormData({
+      wallSensitivity: "",
+      maxLength: "",
+      scopes: [],
+    });
+
+    setShowCameraData(false);
+    setShowWifiData(false);
+  };
+
+  const handleSaveAttachments = async () => {
+    setIsLoading(true);
+    try {
+      if (selectedProductForAttachments?.type === "CAMERA") {
+        const formattedCameraData = {
+          length: parseFloat(cameraFormData.length) || 0,
+          angle: parseFloat(cameraFormData.angle) || 0,
+          resolution: cameraFormData.resolution || "",
+          storage: cameraFormData.storage || "",
+          amber: cameraFormData.amber || "",
+        };
+  
+        await assignCamera({
+          productId: selectedProductForAttachments.id,
+          body: formattedCameraData,
+        }).unwrap();
+  
+        setCameraFormData(formattedCameraData);
+        setHasCameraData(true); // تحديث حالة وجود البيانات
+        toast.success("Camera data saved successfully!");
+      } else if (selectedProductForAttachments?.type === "WIFI") {
+        const formattedWifiData = {
+          wallSensitivity: parseFloat(wifiFormData.wallSensitivity) || 0,
+          maxLength: parseFloat(wifiFormData.maxLength) || 0,
+          scopes: wifiFormData.scopes.map((scope) => ({
+            length: parseFloat(scope.length) || 0,
+            force: parseFloat(scope.force) || 0,
+          })),
+        };
+  
+        await assignWifi({
+          productId: selectedProductForAttachments.id,
+          body: formattedWifiData,
+        }).unwrap();
+  
+        setWifiFormData(formattedWifiData);
+        setHasWifiData(true); // تحديث حالة وجود البيانات
+        toast.success("Wifi data saved successfully!");
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to save data.");
+    } finally {
+      setIsLoading(false); // انتهاء التحميل
+      handleCloseAttachmentsDialog();
+    }
+  };
+  const handleDeleteAttachments = async () => {
+    setIsLoading(true); // بدء التحميل
+    try {
+      if (selectedProductForAttachments?.type === "CAMERA") {
+        await deleteCamera(selectedProductForAttachments.id).unwrap();
+        setCameraFormData({
+          length: "",
+          angle: "",
+          resolution: "",
+          storage: "",
+          amber: "",
+        });
+        setShowCameraData(false);
+        setHasCameraData(false);
+        toast.success("Camera data deleted successfully!");
+      } else if (selectedProductForAttachments?.type === "WIFI") {
+        await deleteWifi(selectedProductForAttachments.id).unwrap();
+        setWifiFormData({
+          wallSensitivity: "",
+          maxLength: "",
+          scopes: [],
+        });
+        setShowWifiData(false);
+        setHasWifiData(false);
+        toast.success("Wifi data deleted successfully!");
+      }
+    } catch (error) {
+      console.error("❌ Delete Error:", error);
+      toast.error(error?.data?.message || "Failed to delete data.");
+    } finally {
+      setIsLoading(false); // انتهاء التحميل
+    }
+  };
+  const handleCameraFormChange = (e) => {
+    const { name, value } = e.target;
+    setCameraFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleWifiFormChange = (e) => {
+    const { name, value } = e.target;
+    setWifiFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleAddScope = () => {
+    setWifiFormData((prev) => ({
+      ...prev,
+      scopes: [...prev.scopes, { length: "", force: "" }],
+    }));
+  };
+
+  const handleScopeChange = (index, field, value) => {
+    setWifiFormData((prev) => {
+      const newScopes = [...prev.scopes];
+      newScopes[index] = { ...newScopes[index], [field]: value };
+      return { ...prev, scopes: newScopes };
+    });
+  };
+
+  const handleRemoveScope = (index) => {
+    setWifiFormData((prev) => {
+      const newScopes = prev.scopes.filter((_, i) => i !== index);
+      return { ...prev, scopes: newScopes };
+    });
   };
 
   return (
@@ -759,6 +1006,16 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                               </Typography>
                             )}
                           </TableCell>
+
+                          <TableCell>
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleOpenAttachmentsDialog(row)}
+                              sx={{ marginLeft: "20px" }}
+                            >
+                              <Upload /> {/* أيقونة الإرفاق */}
+                            </IconButton>
+                          </TableCell>
                           <TableCell>
                             <IconButton
                               color="primary"
@@ -791,18 +1048,12 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                             </IconButton>
                           </TableCell>
                           <TableCell>
-                            {row.type === "WIFI" || row.type === "CAMERA" ? (
-                              <IconButton
-                                color="primary"
-                                onClick={() => handleOpenComponentsDialog(row)}
-                              >
-                                <Package />
-                              </IconButton>
-                            ) : (
-                              <Typography variant="body2" color="textSecondary">
-                                Not Available
-                              </Typography>
-                            )}
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleOpenComponentsDialog(row)}
+                            >
+                              <Package />
+                            </IconButton>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -978,12 +1229,131 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
             onClick={handleAddSubmit}
             variant="contained"
             color="primary"
-            disabled={isSaving} 
+            disabled={isSaving}
           >
             {isSaving ? <CircularProgress size={24} /> : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* دايلوج إدخال البيانات الإضافية */}
+      <Dialog 
+  open={openAttachmentsDialog && !isLoading} 
+  onClose={handleCloseAttachmentsDialog} 
+  maxWidth="sm" 
+  fullWidth
+>
+  <DialogTitle sx={{ textAlign: "center", fontWeight: "bold", fontSize: "20px" }}>
+    {selectedProductForAttachments?.type === "CAMERA" ? "Camera Attachments" : "WiFi Attachments"}
+  </DialogTitle>
+
+  <DialogContent>
+    {isLoading ? (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    ) : (
+      <Box sx={{ mt: 2 }}>
+        {/* بيانات الكاميرا */}
+        {selectedProductForAttachments?.type === "CAMERA" && (
+          <>
+            {[
+              { label: "Length", name: "length", type: "number" },
+              { label: "Angle", name: "angle", type: "number" },
+              { label: "Resolution", name: "resolution" },
+              { label: "Storage", name: "storage" },
+              { label: "Amber", name: "amber", type: "select", options: ["yes", "no"] }
+            ].map(({ label, name, type, options }) => (
+              <TextField
+                key={name}
+                label={label}
+                name={name}
+                type={type || "text"}
+                value={cameraFormData[name]}
+                onChange={handleCameraFormChange}
+                fullWidth
+                sx={{ mb: 2 }}
+                InputProps={{ readOnly: !isEditingAttachments }}
+                select={type === "select"}
+              >
+                {options?.map((option) => (
+                  <MenuItem key={option} value={option}>{option}</MenuItem>
+                ))}
+              </TextField>
+            ))}
+          </>
+        )}
+
+        {/* بيانات الواي فاي */}
+        {selectedProductForAttachments?.type === "WIFI" && (
+          <>
+            {[
+              { label: "Wall Sensitivity", name: "wallSensitivity", type: "number" },
+              { label: "Max Length", name: "maxLength", type: "number" }
+            ].map(({ label, name, type }) => (
+              <TextField
+                key={name}
+                label={label}
+                name={name}
+                type={type}
+                value={wifiFormData[name]}
+                onChange={handleWifiFormChange}
+                fullWidth
+                sx={{ mb: 2 }}
+                InputProps={{ readOnly: !isEditingAttachments }}
+              />
+            ))}
+
+            {/* إدارة الـ Scopes */}
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>Scopes</Typography>
+            {wifiFormData.scopes.map((scope, index) => (
+              <Box key={index} sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
+                <TextField
+                  label={`Scope ${index + 1} - Length`}
+                  type="number"
+                  value={scope.length}
+                  onChange={(e) => handleScopeChange(index, "length", e.target.value)}
+                  fullWidth
+                  InputProps={{ readOnly: !isEditingAttachments }}
+                />
+                <TextField
+                  label={`Scope ${index + 1} - Force`}
+                  type="number"
+                  value={scope.force}
+                  onChange={(e) => handleScopeChange(index, "force", e.target.value)}
+                  fullWidth
+                  InputProps={{ readOnly: !isEditingAttachments }}
+                />
+                {isEditingAttachments && <Button color="error" onClick={() => handleRemoveScope(index)}>Remove</Button>}
+              </Box>
+            ))}
+
+            {isEditingAttachments && <Button variant="outlined" onClick={handleAddScope}>Add Scope</Button>}
+          </>
+        )}
+      </Box>
+    )}
+  </DialogContent>
+
+  {/* الأزرار */}
+  <DialogActions sx={{ justifyContent: "space-between", padding: "16px" }}>
+    <Button variant="contained" color="error" onClick={handleDeleteAttachments} disabled={!hasCameraData && !hasWifiData}>
+      Delete
+    </Button>
+    {isEditingAttachments ? (
+      <Button variant="contained" color="primary" onClick={handleSaveAttachments}>
+        Save
+      </Button>
+    ) : (
+      <Button variant="outlined" color="primary" onClick={() => setIsEditingAttachments(true)}>
+        Edit
+      </Button>
+    )}
+    <Button variant="text" onClick={handleCloseAttachmentsDialog}>
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
 
       {/* Edit Product Dialog */}
       <Dialog
@@ -1062,7 +1432,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
             onClick={handleEditSubmit}
             variant="contained"
             color="primary"
-            disabled={isSaving} 
+            disabled={isSaving}
           >
             {isSaving ? <CircularProgress size={24} /> : "Save"}
           </Button>
@@ -1368,7 +1738,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                   }}
                 >
                   <img
-                    src={image.imageUrl} 
+                    src={image.imageUrl}
                     alt="Product"
                     style={{
                       width: "100%",
@@ -1388,7 +1758,7 @@ const Products = ({ toggleSidebar, isSidebarOpen }) => {
                   >
                     <IconButton
                       size="small"
-                      onClick={() => handleDeleteImage(image.id)} 
+                      onClick={() => handleDeleteImage(image.id)}
                       sx={{
                         color: "white",
                         "&:hover": {
