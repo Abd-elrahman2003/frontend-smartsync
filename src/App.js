@@ -16,8 +16,9 @@ import Users from "./pages/Users";
 import Category from "./pages/Category";
 import Roles from "./pages/Roles";
 import Products from "./pages/Products";
-
 import Store from "./pages/Store";
+import Purchasing from "./pages/Purchasing";
+import Supplier from "./pages/Supplier";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -55,12 +56,10 @@ const App = () => {
         <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-
-
         <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-
-        
-
+        <Route path="/purchase" element={<Purchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/supplier" element={<Supplier toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         {/* Check directly for token in localStorage and redirect if not found */}
         <Route
           path="/"

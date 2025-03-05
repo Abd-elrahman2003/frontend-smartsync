@@ -8,6 +8,10 @@ import { productsApi } from '../Featuress/Products/ProductsApi'; // إضافة �
 import { categoriesApi } from '../Featuress/categories/categoriesApi';
 import { storeApi } from '../Featuress/Store/storeApi';
 import { locationsApi } from '../Featuress/locations/locationApis';
+import { purchasingApi } from '../Featuress/Purchasing/purchasingApi';
+import { supplierApi } from '../Featuress/Suppliers/supplierApi';
+import { transferApi } from '../Featuress/Transfer/transferApi';
+
 
 import authReducer from '../Featuress/auth/authSlice';
 import screensReducer from '../Featuress/screens/screensSlice';
@@ -18,6 +22,10 @@ import rolesReducer from '../Featuress/Roles/rolesSlice';
 import productsReducer from '../Featuress/Products/ProductsSlice'; 
 import categoriesReducer from '../Featuress/categories/categoriesSlice';
 import storeReducer from '../Featuress/Store/storeSlice';
+import purchasingReducer from '../Featuress/Purchasing/purchasingSlice';
+import supplierReducer from '../Featuress/Suppliers/supplierSlice';
+import transferReducer from '../Featuress/Transfer/transferSlice';
+
 
 export const store = configureStore({
   reducer: {
@@ -27,6 +35,10 @@ export const store = configureStore({
     [usersApi.reducerPath]: usersApi.reducer,
     [permissionsApi.reducerPath]: permissionsApi.reducer,
     [productsApi.reducerPath]: productsApi.reducer, 
+    [purchasingApi.reducerPath]: purchasingApi.reducer,
+    [supplierApi.reducerPath]: supplierApi.reducer,
+    [transferApi.reducerPath]: transferApi.reducer,
+    
 
     // Slices
     [rolesApi.reducerPath]:rolesApi.reducer,
@@ -44,6 +56,10 @@ export const store = configureStore({
     locations:locationReducer,
     categories: categoriesReducer,
     store: storeReducer,
+    purchasing: purchasingReducer,
+    suppliers: supplierReducer,
+    transfer: transferReducer,
+    
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -56,6 +72,10 @@ export const store = configureStore({
       locationsApi.middleware,
       categoriesApi.middleware,
       storeApi.middleware,
+      purchasingApi.middleware,
+      supplierApi.middleware,
+      transferApi.middleware,
+      
     ),
 });
 

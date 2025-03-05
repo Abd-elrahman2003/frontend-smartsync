@@ -65,9 +65,9 @@ const Sidebar = ({ isOpen }) => {
     { icon: faBox, text: 'Products', href: '/products' },
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
-    { icon: faStore, text: 'Store', href: '/store' }
-
-
+    { icon: faStore, text: 'Store', href: '/store' },
+    { icon: faThLarge, text: 'Purchasing', href: '/purchase' },
+    { icon: faThLarge, text: 'Supplier', href: '/supplier' },
   ];
   return (
     <Box
