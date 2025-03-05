@@ -16,6 +16,9 @@ import {
   Checkbox,
   FormControlLabel,
   CircularProgress,
+  Grid,
+  InputAdornment,
+  Pagination,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -49,6 +52,7 @@ import {
 } from "../Redux/Featuress/Roles/rolesApi";
 
 import { toast } from "react-toastify";
+import { Email, Person, Visibility, VisibilityOff } from "@mui/icons-material";
 
 const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
   const theme = useTheme();
@@ -60,6 +64,9 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [screenPermissions, setScreenPermissions] = useState({});
   const [expandedRoutes, setExpandedRoutes] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1); // Pagination state
 
   const [passwords, setPasswords] = useState({
     password: "",
@@ -76,6 +83,7 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     permissions: "",
     dashboardPermissions: "",
   });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [filteredData, setFilteredData] = useState([]);
@@ -85,13 +93,15 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
 
   // Users API queries
   const {
-    data: users = [],
-    // eslint-disable-next-line no-unused-vars
-    isFetching,
+    data: usersData = { users: [], totalPages: 1 },
     refetch,
-  } = useGetUsersQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-  });
+  } = useGetUsersQuery(
+    { page: currentPage, searchParams: { firstName: searchQuery } },
+    {
+      refetchOnMountOrArgChange: true,
+    }
+  );
+
   const [createUser] = useCreateUserMutation();
   const [updateUser] = useUpdateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
@@ -129,6 +139,27 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     }
   }, [formattedScreens]);
 
+  useEffect(() => {
+    if (openRolesDialog && selectedUser) {
+      const userRoles = selectedUser.roles || [];
+      setSelectedUserRoles(userRoles);
+  
+      const assignedRoles = new Set(userRoles.map((role) => role.id));
+      setAvailableRoles(roles.filter((role) => !assignedRoles.has(role.id)));
+    }
+  }, [openRolesDialog, selectedUser, roles]);
+
+
+  // أضف هذا داخل useEffect لمراقبة البيانات
+useEffect(() => {
+  console.log("Selected User:", selectedUser);
+  console.log("Selected User Roles:", selectedUserRoles);
+  console.log("Available Roles:", availableRoles);
+}, [selectedUser, selectedUserRoles, availableRoles]);
+
+
+
+
   const formatUserData = (usersData) => {
     return usersData.map((user) => ({
       "First Name": user.firstName,
@@ -165,6 +196,7 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     setSelectedUser(user);
     setOpenPasswordDialog(true);
   };
+
   const handleLock = (user) => {
     setSelectedUser(user);
     setSelectedUserId(user._original.id);
@@ -256,7 +288,7 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
 
   const handleAddSubmit = async () => {
     if (newUser.password !== newUser.confirmPassword) {
-      toast.error("Passwords do not match!");
+      toast.error("Passwords do not match!", { autoClose: 4000 });
       return;
     }
 
@@ -274,9 +306,17 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
         permissions: "",
         dashboardPermissions: "",
       });
-      toast.success("User created successfully!");
+      toast.success("User created successfully!", { autoClose: 1500 });
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to create user.");
+      const errorMessage = error?.data?.message || "Failed to create user.";
+
+      if (errorMessage.includes("Email already exists")) {
+        toast.error("This email is already in use. Please try another.", { autoClose: 3000 });
+      } else if (errorMessage.includes("password is not strong enough")) {
+        toast.error("Weak password! Use uppercase, lowercase, numbers & symbols.", { autoClose: 4000 });
+      } else {
+        toast.error(errorMessage, { autoClose: 2000 });
+      }
     }
   };
 
@@ -322,7 +362,7 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
-    const filtered = users.filter((user) =>
+    const filtered = usersData.users.filter((user) =>
       Object.values(user).some((value) =>
         value?.toString().toLowerCase().includes(query)
       )
@@ -332,7 +372,7 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
 
   const handleDelete = async (index) => {
     try {
-      const userToDelete = users[index];
+      const userToDelete = usersData.users[index];
       await deleteUser(userToDelete.id).unwrap();
       await refetch();
       toast.success("User deleted successfully!");
@@ -346,49 +386,80 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
       toast.error("Please select a valid user first.");
       return;
     }
-
+  
+    // تعيين المستخدم المحدد ومعرف المستخدم
     setSelectedUser(user);
     setSelectedUserId(user.id || user._original?.id);
-
-    setSelectedUserRoles(user.roles || []);
-    const assignedRoles = new Set(user.roles || []);
-    setAvailableRoles(roles.filter((role) => !assignedRoles.has(role.name)));
-
+  
+    // استرجاع الأدوار الحالية للمستخدم
+    const userRoles = user.roles || [];
+    setSelectedUserRoles(userRoles);
+  
+    // تحديث الأدوار المتاحة بناءً على الأدوار المحددة
+    const assignedRoles = new Set(userRoles.map((role) => role.id));
+    setAvailableRoles(roles.filter((role) => !assignedRoles.has(role.id)));
+  
+    // فتح مربع الحوار
     setOpenRolesDialog(true);
   };
+// إغلاق مربع الحوار
+const handleCloseRolesDialog = () => {
+  setOpenRolesDialog(false); // إغلاق مربع الحوار فقط
+};
 
-  const handleCloseRolesDialog = () => {
-    setOpenRolesDialog(false);
-  };
+// إضافة دور للمستخدم
+const handleAddRoleToUser = (role) => {
+  setSelectedUserRoles((prevRoles) => [...prevRoles, role]);
+  setAvailableRoles((prevRoles) => prevRoles.filter((r) => r.id !== role.id));
+};
 
-  const handleAddRoleToUser = (role) => {
-    setSelectedUserRoles((prevRoles) => [...prevRoles, role]);
-    setAvailableRoles((prevRoles) => prevRoles.filter((r) => r.id !== role.id));
-  };
+// إزالة دور من المستخدم
+const handleRemoveRoleFromUser = (role) => {
+  setSelectedUserRoles((prevRoles) => prevRoles.filter((r) => r.id !== role.id));
+  setAvailableRoles((prevRoles) => [...prevRoles, role]);
+};
 
-  const handleRemoveRoleFromUser = (role) => {
-    setSelectedUserRoles((prevRoles) =>
-      prevRoles.filter((r) => r.id !== role.id)
-    );
-    setAvailableRoles((prevRoles) => [...prevRoles, role]);
-  };
+// تعديل دالة handleSubmitRoles لإعادة تحميل بيانات المستخدم بعد التحديث
+const handleSubmitRoles = async () => {
+  if (!selectedUserId) {
+    toast.error("Please select a user first.");
+    return;
+  }
 
-  const handleSubmitRoles = async () => {
-    if (!selectedUserId) {
-      toast.error("Please select a user first.");
-      return;
-    }
+  const roleIds = selectedUserRoles.map((role) => role.id);
 
-    const roleIds = selectedUserRoles.map((role) => role.id);
+  try {
+    // إرسال الأدوار إلى الخادم
+    const response = await assignRoleToUser({ userId: selectedUserId, roleIds }).unwrap();
 
-    try {
-      await assignRoleToUser({ userId: selectedUserId, roleIds });
+    // طباعة الرد بالكامل
+    console.log("Response from server:", response);
 
-      toast.success("Roles assigned successfully!");
-      setOpenRolesDialog(false);
-    } catch (error) {
-      toast.error("Failed to assign roles.");
-    }
+    // تحويل roleIds (الأرقام) إلى مصفوفة من الكائنات
+    const updatedAssignedRoles = roleIds
+      .map((roleId) => roles.find((role) => role.id === roleId))
+      .filter((role) => role); // إزالة القيم غير المعرّفة (undefined)
+
+    // تحديث الحالة
+    setSelectedUserRoles(updatedAssignedRoles);
+
+    // تحديث الأدوار المتاحة
+    const assignedRoleIds = new Set(roleIds);
+    setAvailableRoles(roles.filter((role) => !assignedRoleIds.has(role.id)));
+
+    // إظهار رسالة نجاح
+    toast.success(response.message || "Roles updated successfully!");
+
+    // إغلاق مربع الحوار
+    handleCloseRolesDialog();
+  } catch (error) {
+    // إظهار رسالة خطأ في حالة فشل الإرسال
+    console.error("Error updating roles:", error);
+    toast.error(error?.data?.message || "Failed to update roles.");
+  }
+};
+  const handlePageChange = (event, newPage) => {
+    setCurrentPage(newPage);
   };
 
   const renderActionButtons = (user) => {
@@ -401,8 +472,6 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
           <Lock size={20} />
         </IconButton>
         <IconButton onClick={() => onLock(user)} color="info">
-          {" "}
-          {/* Use onLock here */}
           <Lock size={20} />
         </IconButton>
       </Box>
@@ -490,67 +559,166 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
 
           <Tables
             columns={columns}
-            data={formatUserData(searchQuery ? filteredData : users)}
+            data={formatUserData(searchQuery ? filteredData : usersData.users)}
             onDelete={handleDelete}
             onLock={handleLock}
             renderActions={renderActionButtons}
           />
+
+          {/* Pagination */}
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+            <Pagination
+              count={usersData.totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </Box>
         </Box>
       </Box>
       <Footer />
 
       {/* Add User Dialog */}
-      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
-        <DialogTitle>Add User</DialogTitle>
+      <Dialog
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
+          Add New User
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            margin="dense"
-            label="First Name"
-            value={newUser.firstName}
-            onChange={(e) =>
-              setNewUser({ ...newUser, firstName: e.target.value })
-            }
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Last Name"
-            value={newUser.lastName}
-            onChange={(e) =>
-              setNewUser({ ...newUser, lastName: e.target.value })
-            }
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Email"
-            type="email"
-            value={newUser.email}
-            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Password"
-            type="password"
-            value={newUser.password}
-            onChange={(e) =>
-              setNewUser({ ...newUser, password: e.target.value })
-            }
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Confirm Password"
-            type="password"
-            value={newUser.confirmPassword}
-            onChange={(e) =>
-              setNewUser({ ...newUser, confirmPassword: e.target.value })
-            }
-          />
+          <Grid container spacing={2}>
+            {/* First Name */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="First Name"
+                value={newUser.firstName}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, firstName: e.target.value })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            {/* Last Name */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Last Name"
+                value={newUser.lastName}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, lastName: e.target.value })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            {/* Email */}
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Email"
+                type="email"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            {/* Password */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            {/* Confirm Password */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Confirm Password"
+                type={showConfirmPassword ? "text" : "password"}
+                value={newUser.confirmPassword}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, confirmPassword: e.target.value })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                      >
+                        {showConfirmPassword ? (
+                          <VisibilityOff />
+                        ) : (
+                          <Visibility />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setOpenAddDialog(false)} color="secondary">
             Cancel
           </Button>
@@ -663,107 +831,101 @@ const Users = ({ toggleSidebar, isSidebarOpen, onLock }) => {
       </Dialog>
 
       {/* RolesDialog */}
-
       <Dialog
-        open={openRolesDialog}
-        onClose={handleCloseRolesDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: "bold", textAlign: "center" }}>
-          Manage Roles
-        </DialogTitle>
-        <DialogContent>
-          {/* أدوار المستخدم */}
-          {/* Your Roles */}
-          <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-            Your Roles
-          </Typography>
-          <Box
-            sx={{
-              minHeight: 100,
-              backgroundColor: "#f1f1f1",
-              padding: 2,
-              borderRadius: 2,
-            }}
-          >
-            {selectedUserRoles.length > 0 ? (
-              selectedUserRoles.map((role) => (
-                <Box
-                  key={role.id}
-                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
+      open={openRolesDialog}
+      onClose={handleCloseRolesDialog}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle sx={{ fontWeight: "bold", textAlign: "center" }}>
+        Manage Roles
+      </DialogTitle>
+      <DialogContent>
+        {/* الأدوار المحددة للمستخدم */}
+        <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
+          Your Roles
+        </Typography>
+        <Box
+          sx={{
+            minHeight: 100,
+            backgroundColor: "#f1f1f1",
+            padding: 2,
+            borderRadius: 2,
+          }}
+        >
+          {selectedUserRoles.length > 0 ? (
+            selectedUserRoles.map((role) => (
+              <Box
+                key={role.id}
+                sx={{ display: "flex", alignItems: "center", mb: 1 }}
+              >
+                <Typography sx={{ fontSize: "16px", flexGrow: 1 }}>
+                  {role.name}
+                </Typography>
+                <IconButton
+                  onClick={() => handleRemoveRoleFromUser(role)}
+                  sx={{ color: "red" }}
                 >
-                  <Typography sx={{ fontSize: "16px", flexGrow: 1 }}>
-                    {role.name}
-                  </Typography>
-                  <IconButton
-                    onClick={() => handleRemoveRoleFromUser(role)}
-                    sx={{ color: "red" }}
-                  >
-                    <Trash size={18} color="#e60a0a" />
-                  </IconButton>
-                </Box>
-              ))
-            ) : (
-              <Typography sx={{ color: "gray" }}>No assigned roles</Typography>
-            )}
-          </Box>
-
-          {/* الأدوار المتاحة */}
-          <Typography variant="h6" sx={{ fontWeight: "bold", mt: 3, mb: 1 }}>
-            Available Roles
-          </Typography>
-          <Box
-            sx={{
-              minHeight: 100,
-              padding: 2,
-              borderRadius: 2,
-            }}
-          >
-            {rolesLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                <CircularProgress size={30} />
+                  <Trash size={18} color="#e60a0a" />
+                </IconButton>
               </Box>
-            ) : availableRoles.length > 0 ? (
-              availableRoles.map((role) => (
-                <Box
-                  key={role.id}
-                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
-                >
-                  <Typography sx={{ fontSize: "16px", flexGrow: 1 }}>
-                    {role.name}
-                  </Typography>
-                  <IconButton
-                    onClick={() => handleAddRoleToUser(role)}
-                    sx={{ color: "green" }}
-                  >
-                    <BadgePlus size={20} color={theme.palette.primary.main} />
-                  </IconButton>
-                </Box>
-              ))
-            ) : (
-              <Typography sx={{ color: "gray" }}>No available roles</Typography>
-            )}
-          </Box>
-        </DialogContent>
+            ))
+          ) : (
+            <Typography sx={{ color: "gray" }}>No assigned roles</Typography>
+          )}
+        </Box>
 
-        <DialogActions sx={{ justifyContent: "space-between", px: 3 }}>
-          <Button
-            onClick={handleCloseRolesDialog}
-            color="secondary"
-            variant="outlined"
-          >
-            Close
-          </Button>
-          <Button
-            onClick={handleSubmitRoles}
-            color="primary"
-            variant="contained"
-          >
-            Submit
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* الأدوار المتاحة */}
+        <Typography variant="h6" sx={{ fontWeight: "bold", mt: 3, mb: 1 }}>
+          Available Roles
+        </Typography>
+        <Box
+          sx={{
+            minHeight: 100,
+            padding: 2,
+            borderRadius: 2,
+          }}
+        >
+          {availableRoles.length > 0 ? (
+            availableRoles.map((role) => (
+              <Box
+                key={role.id}
+                sx={{ display: "flex", alignItems: "center", mb: 1 }}
+              >
+                <Typography sx={{ fontSize: "16px", flexGrow: 1 }}>
+                  {role.name}
+                </Typography>
+                <IconButton
+                  onClick={() => handleAddRoleToUser(role)}
+                  sx={{ color: "green" }}
+                >
+                  <BadgePlus size={20} color={theme.palette.primary.main} />
+                </IconButton>
+              </Box>
+            ))
+          ) : (
+            <Typography sx={{ color: "gray" }}>No available roles</Typography>
+          )}
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ justifyContent: "space-between", px: 3 }}>
+        <Button
+          onClick={handleCloseRolesDialog}
+          color="secondary"
+          variant="outlined"
+        >
+          Close
+        </Button>
+        <Button
+          onClick={handleSubmitRoles}
+          color="primary"
+          variant="contained"
+        >
+          Submit
+        </Button>
+      </DialogActions>
+    </Dialog>
 
       {/* Permissions Dialog */}
       <Dialog

@@ -1,4 +1,3 @@
-// usersApi.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { toast } from 'react-toastify';
 
@@ -16,14 +15,19 @@ export const usersApi = createApi({
   }),
   tagTypes: ['Users'],
   endpoints: (builder) => ({
+    
+    // ✅ Fetch users with pagination & search filters
     getUsers: builder.query({
-      query: () => '/',
+      query: ({ page = 1, id, firstName, lastName, email }) => ({
+        url: `/${page}`,
+        method: 'GET',
+        params: { id, firstName, lastName, email }, // Adds query parameters
+      }),
       providesTags: ['Users'],
-      transformResponse: (response) => {
-        return response;
-      },
+      transformResponse: (response) => response,
     }),
 
+    // ✅ Create a new user
     createUser: builder.mutation({
       query: (userData) => ({
         url: '/',
@@ -31,19 +35,16 @@ export const usersApi = createApi({
         body: userData,
       }),
       invalidatesTags: ['Users'],
-      transformResponse: (response) => {
-        return response;
-      },
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           await queryFulfilled;
-          // Toast message will be handled in the component
         } catch (error) {
           console.error('Create User Error:', error);
         }
       },
     }),
 
+    // ✅ Update user details
     updateUser: builder.mutation({
       query: ({ id, ...patch }) => ({
         url: `/${id}`,
@@ -61,6 +62,7 @@ export const usersApi = createApi({
       },
     }),
 
+    // ✅ Delete a user
     deleteUser: builder.mutation({
       query: (id) => ({
         url: `/${id}`,
