@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Box,
   Button,
@@ -20,37 +20,20 @@ const OperationsButtons = ({
   onDeleteClick,
   onUpdateClick,
   onUnpostClick,
+  showActionButtons = false, // Default to false
+  isPosted = false, // Default to false
 }) => {
-  const [showActionButtons, setShowActionButtons] = useState(false);
-  const [isPosted, setIsPosted] = useState(false);
-
   const handleSaveClick = async () => {
     if (onSaveClick) {
-      const success = await onSaveClick(); // Wait for the response
-      if (success) {
-        setShowActionButtons(true); // Show Update, Delete, Post
-      }
+      await onSaveClick(); // No need to update local state here
     }
   };
 
-  const handlePostClick = () => {
-    setIsPosted(true);
-    if (onPostClick) onPostClick();
-  };
-
-  const handleUnpostClick = () => {
-    setIsPosted(false);
-    if (onUnpostClick) onUnpostClick();
-  };
-
   const handleResetClick = () => {
-    setShowActionButtons(false);
-    setIsPosted(false);
     if (onResetClick) onResetClick();
   };
   
   const handleDeleteClick = () => {
-    setShowActionButtons(false); // Switch back to Save Order button
     if (onDeleteClick) onDeleteClick();
   };
 
@@ -63,7 +46,7 @@ const OperationsButtons = ({
   return (
     <Box sx={{ width: "100%", maxWidth: 1445, mt: 3 }}>
       <Box sx={{ display: "flex", gap: 2, marginBottom: 4 }}>
-        {/* Search and Reset */}
+        {/* Search and Reset - Always visible */}
         <Button
           variant="contained"
           color="primary"
@@ -95,15 +78,16 @@ const OperationsButtons = ({
             Save Order
           </Button>
         ) : (
-          // After saving, show Update, Delete, and Post buttons
+          // After saving, show appropriate buttons based on isPosted
           <Box sx={{ display: "flex", gap: 2 }}>
             {!isPosted ? (
+              // Show Post, Delete, Update for non-posted orders
               <>
                 <Button
                   variant="contained"
                   color="info"
                   startIcon={<FaPaperPlane />}
-                  onClick={handlePostClick}
+                  onClick={onPostClick}
                   sx={buttonStyles}
                 >
                   Post
@@ -128,11 +112,12 @@ const OperationsButtons = ({
                 </Button>
               </>
             ) : (
+              // Show only Unpost for posted orders
               <Button
                 variant="contained"
                 color="warning"
                 startIcon={<FaPaperPlane />}
-                onClick={handleUnpostClick}
+                onClick={onUnpostClick}
                 sx={buttonStyles}
               >
                 Unpost

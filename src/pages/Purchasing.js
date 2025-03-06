@@ -23,6 +23,7 @@ import {
   MenuItem,
   Paper,
   Grid,
+  Autocomplete,
 } from "@mui/material";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { useTheme } from "@mui/material/styles";
@@ -298,38 +299,39 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
     <Dialog open={activeDialog.type === 'edit'} onClose={handleDialogClose}>
       <DialogTitle>Edit Item</DialogTitle>
       <DialogContent>
-        <FormControl fullWidth margin="normal" disabled={currentPurchaseOrder.isPosted || isSaving}>
-          <InputLabel>Product</InputLabel>
-          <Select
-            value={activeDialog.data?.productId || ""}
-            onChange={(e) => {
-              const product = productsData.products?.find(p => p.id === e.target.value);
-              if (product) {
-                setActiveDialog(prev => ({
-                  ...prev,
-                  data: {
-                    ...prev.data,
-                    productId: product.id,
-                    productName: product.name,
-                    productCode: product.code,
-                    price: product.price
-                  }
-                }));
-                setEditData(prev => ({
-                  ...prev,
-                  price: product.price
-                }));
-              }
-            }}
-            disabled={isLoadingProducts || currentPurchaseOrder.isPosted || isSaving}
-          >
-            {productsData.products?.map((product) => (
-              <MenuItem key={product.id} value={product.id}>
-                {product.name} ({product.code})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <FormControl fullWidth margin="normal" disabled={currentPurchaseOrder.isPosted || isSaving}>
+  <Autocomplete
+    options={productsData.products || []}
+    getOptionLabel={(option) => `${option.name} (${option.code})`}
+    value={productsData.products?.find(p => p.id === activeDialog.data?.productId) || null}
+    onChange={(_, newValue) => {
+      if (newValue) {
+        const product = newValue;
+        setActiveDialog(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            productId: product.id,
+            productName: product.name,
+            productCode: product.code,
+            price: product.price
+          }
+        }));
+        setEditData(prev => ({
+          ...prev,
+          price: product.price
+        }));
+      }
+    }}
+    disabled={isLoadingProducts || currentPurchaseOrder.isPosted || isSaving}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        label="Product"
+      />
+    )}
+  />
+</FormControl>
         
         <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
           Code: <span style={{ fontFamily: 'monospace' }}>{activeDialog.data?.productCode}</span>
@@ -697,6 +699,8 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
             onUnpostClick={handleUnpostOrder}
             onDeleteClick={handleDeleteOrder}
             onUpdateClick={handleUpdateOrder}
+            showActionButtons={currentPurchaseOrder.isSaved} // Pass if order is saved
+            isPosted={currentPurchaseOrder.isPosted} // Pass the posted status
           />
 
           {/* Purchase Form */}
@@ -704,42 +708,45 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
             <Grid container spacing={2}>
               {/* Supplier Field */}
               <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel>Supplier</InputLabel>
-                  <Select
-                    value={currentPurchaseOrder.supplierId}
-                    onChange={(e) => setCurrentPurchaseOrder(prev => ({ ...prev, supplierId: e.target.value }))}
-                    disabled={isLoadingSuppliers || currentPurchaseOrder.isPosted || isSaving}
-                    sx={{ height: '56px', display: 'flex', alignItems: 'center' }}
-                  >
-                    {suppliersData.suppliers?.map((supplier) => (
-                      <MenuItem key={supplier.id} value={supplier.id}>
-                        {supplier.fullName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+  <Autocomplete
+    options={suppliersData.suppliers || []}
+    getOptionLabel={(option) => option.fullName}
+    value={suppliersData.suppliers?.find(s => s.id === currentPurchaseOrder.supplierId) || null}
+    onChange={(_, newValue) => setCurrentPurchaseOrder(prev => ({ 
+      ...prev, 
+      supplierId: newValue ? newValue.id : "" 
+    }))}
+    disabled={isLoadingSuppliers || currentPurchaseOrder.isPosted || isSaving}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        label="Supplier"
+        sx={{ height: '56px' }}
+      />
+    )}
+  />
+</Grid>
 
               {/* Store Field */}
               <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel>Store</InputLabel>
-                  <Select
-                    value={currentPurchaseOrder.storeId}
-                    onChange={(e) => setCurrentPurchaseOrder(prev => ({ ...prev, storeId: e.target.value }))}
-                    disabled={isLoadingStores || currentPurchaseOrder.isPosted || isSaving}
-                    name="store"
-                    sx={{ height: '56px', display: 'flex', alignItems: 'center' }}
-                  >
-                    {storesData.stores?.map((store) => (
-                      <MenuItem key={store.id} value={store.id}>
-                        {store.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+  <Autocomplete
+    options={storesData.stores || []}
+    getOptionLabel={(option) => option.name}
+    value={storesData.stores?.find(s => s.id === currentPurchaseOrder.storeId) || null}
+    onChange={(_, newValue) => setCurrentPurchaseOrder(prev => ({ 
+      ...prev, 
+      storeId: newValue ? newValue.id : "" 
+    }))}
+    disabled={isLoadingStores || currentPurchaseOrder.isPosted || isSaving}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        label="Store"
+        sx={{ height: '56px' }}
+      />
+    )}
+  />
+</Grid>
 
               {/* Note Field */}
               <Grid item xs={12} md={2}>
@@ -888,21 +895,24 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
           {multipleItems.map((item, index) => (
             <Grid container spacing={2} sx={{ mt: index > 0 ? 3 : 1, pb: 2, borderBottom: index < multipleItems.length - 1 ? 1 : 0, borderColor: 'divider' }} key={index}>
               <Grid item xs={12} md={4}>
-                <FormControl fullWidth disabled={currentPurchaseOrder.isPosted || isSaving}>
-                  <InputLabel>Product</InputLabel>
-                  <Select
-                    value={item.productId}
-                    onChange={(e) => handleMultipleProductChange(index, e.target.value)}
-                    disabled={isLoadingProducts || currentPurchaseOrder.isPosted || isSaving}
-                  >
-                    {productsData.products?.map((product) => (
-                      <MenuItem key={product.id} value={product.id}>
-                        {product.name} ({product.code})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+  <Autocomplete
+    options={productsData.products || []}
+    getOptionLabel={(option) => `${option.name} (${option.code})`}
+    value={productsData.products?.find(p => p.id === item.productId) || null}
+    onChange={(_, newValue) => {
+      if (newValue) {
+        handleMultipleProductChange(index, newValue.id);
+      }
+    }}
+    disabled={isLoadingProducts || currentPurchaseOrder.isPosted || isSaving}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        label="Product"
+      />
+    )}
+  />
+</Grid>
               <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
