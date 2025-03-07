@@ -394,7 +394,7 @@ const PurchaseSearchDialog = ({
                     <TableCell sx={{ fontWeight: "bold", backgroundColor: "#1976d2", color: "white" }}>Date</TableCell>
                     <TableCell sx={{ fontWeight: "bold", backgroundColor: "#1976d2", color: "white" }}>Supplier</TableCell>
                     <TableCell sx={{ fontWeight: "bold", backgroundColor: "#1976d2", color: "white" }}>Store</TableCell>
-                    <TableCell sx={{ fontWeight: "bold", backgroundColor: "#1976d2", color: "white" }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: "bold", backgroundColor: "#1976d2", color: "white" }}>Posted?</TableCell>
                     <TableCell sx={{ fontWeight: "bold", backgroundColor: "#1976d2", color: "white" }}>Action</TableCell>
                   </TableRow>
                 </TableHead>
@@ -413,7 +413,7 @@ const PurchaseSearchDialog = ({
                           borderRadius: '4px',
                           fontSize: '0.75rem'
                         }}>
-                          {purchase.isPosted ? 'Posted' : 'Draft'}
+                          {purchase.isPosted ? 'POSTED' : 'UNPOSTED'}
                         </span>
                       </TableCell>
                       <TableCell>
