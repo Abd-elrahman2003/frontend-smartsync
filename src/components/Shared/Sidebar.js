@@ -1,3 +1,5 @@
+/* eslint-disable eqeqeq */
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText, Collapse } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,7 +11,8 @@ import {
   faWarehouse,
   faChartLine,
   faUserCircle,
-  faChevronDown, 
+  faChevronDown,
+  faBox,
   faTv,
   faThLarge,
   faStore
@@ -58,18 +61,19 @@ const Sidebar = ({ isOpen }) => {
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
+    { icon: faUserCircle, text: 'Screens', href: '/Screen' },
+    { icon: faBox, text: 'Products', href: '/products' },
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
     { icon: faStore, text: 'Store', href: '/store' }
 
 
   ];
-
   return (
     <Box
       sx={{
         width: isOpen ? 250 : 60,
-        height: '100vh',
+        height: '130vh',
         backgroundColor: theme.palette.background.paper,
         boxShadow: '2px 0 6px rgba(0, 0, 0, 0.1)',
         display: 'flex',

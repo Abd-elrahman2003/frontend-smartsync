@@ -1,4 +1,3 @@
-//Store.js
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -9,6 +8,10 @@ import {
   TextField,
   Button,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Sidebar from "../components/Shared/Sidebar";
@@ -23,6 +26,7 @@ import {
   useUpdateStoreMutation,
   useDeleteStoreMutation,
 } from "../Redux/Featuress/Store/storeApi";
+import { useGetLocationQuery } from "../Redux/Featuress/locations/locationApis";
 import { toast } from "react-toastify";
 
 const Store = ({ toggleSidebar, isSidebarOpen }) => {
@@ -38,6 +42,7 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState([]);
+  const [locationsPage, setLocationsPage] = useState(1);
 
   const { 
     data: storesData = {}, 
@@ -48,11 +53,22 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
     refetchOnMountOrArgChange: true
   });
 
+  // Fetch locations for the dropdown
+  const { 
+    data: locationsData = [], 
+    isLoading: isLoadingLocations 
+  } = useGetLocationQuery({ page: locationsPage }, {
+    refetchOnMountOrArgChange: true
+  });
+
   const [createStore] = useCreateStoreMutation();
   const [updateStore] = useUpdateStoreMutation();
   const [deleteStore] = useDeleteStoreMutation();
 
   const columns = ["id", "name", "address", "phone", "locationsId"];
+
+  // Ensure locations data is an array
+  const locations = Array.isArray(locationsData) ? locationsData : [];
 
   const handleAddClick = () => setOpenAddDialog(true);
 
@@ -88,6 +104,13 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
     );
     setFilteredData(filtered || []);
     setOpenSearchDialog(false);
+  };
+
+  const handleLocationChange = (e) => {
+    setNewItem({
+      ...newItem,
+      locationsId: e.target.value
+    });
   };
 
   const handleAddDialogClose = () => {
@@ -218,7 +241,7 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
       </Box>
       <Footer />
 
-      {/* Add Dialog */}
+      {/* Add Dialog with Location Dropdown */}
       <Dialog open={openAddDialog} onClose={handleAddDialogClose}>
         <DialogTitle>Add Store</DialogTitle>
         <DialogContent>
@@ -249,15 +272,36 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
             value={newItem.phone}
             onChange={(e) => setNewItem({ ...newItem, phone: e.target.value })}
           />
-          <TextField
-            margin="dense"
-            label="Location ID"
-            type="number"
-            fullWidth
-            required
-            value={newItem.locationsId}
-            onChange={(e) => setNewItem({ ...newItem, locationsId: e.target.value })}
-          />
+          
+          {/* Location Dropdown */}
+          <FormControl fullWidth margin="dense" required>
+            <InputLabel id="location-select-label">Location</InputLabel>
+            <Select
+              labelId="location-select-label"
+              id="location-select"
+              value={newItem.locationsId}
+              label="Location"
+              onChange={handleLocationChange}
+              disabled={isLoadingLocations}
+            >
+              {isLoadingLocations ? (
+                <MenuItem value="">
+                  <em>Loading locations...</em>
+                </MenuItem>
+              ) : (
+                [
+                  <MenuItem key="none" value="">
+                    <em>Select a location</em>
+                  </MenuItem>,
+                  ...locations.map((location) => (
+                    <MenuItem key={location.id} value={location.id}>
+                      {location.name}
+                    </MenuItem>
+                  ))
+                ]
+              )}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleAddDialogClose}>Cancel</Button>
@@ -300,4 +344,4 @@ const Store = ({ toggleSidebar, isSidebarOpen }) => {
   );
 };
 
-export default Store;
+export default Store;

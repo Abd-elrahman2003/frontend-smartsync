@@ -15,6 +15,8 @@ import Locations from "./pages/Locations";
 import Users from "./pages/Users";
 import Category from "./pages/Category";
 import Roles from "./pages/Roles";
+import Products from "./pages/Products";
+
 import Store from "./pages/Store";
 
 const App = () => {
@@ -52,6 +54,9 @@ const App = () => {
         <Route path="/locations" element={<Locations toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/category" element={<Category toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} /> {/* Add Category route */}
         <Route path="/roles" element={<Roles toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+
+
         <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
 
         
