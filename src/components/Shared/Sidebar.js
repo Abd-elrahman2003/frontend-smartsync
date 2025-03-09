@@ -9,13 +9,22 @@ import {
   faCircle,
   faGear,
   faWarehouse,
-  faChartLine,
-  faUserCircle,
+  faFileAlt,
   faChevronDown,
+  faClipboardList,
+  faUserShield,
+  faUserCircle,
+  faChartLine,
+  faUserTie,
   faBox,
+  faMapMarkerAlt,
+  faUsers,
   faTv,
   faThLarge,
-  faStore
+  faCubes,
+  faStore,
+  faShoppingCart,
+  faHandshake
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -48,16 +57,16 @@ const Sidebar = ({ isOpen }) => {
       text: 'User Management',
       href: '/user-management',
       children: [
-        { icon: faCircle, text: 'Users', href: '/users' },
-        { icon: faCircle, text: 'Roles', href: '/roles' },
-        { icon: faCircle, text: 'System Logs', href: '/system-logs' },
+        { icon: faUsers, text: 'Users', href: '/users' },
+        { icon: faUserShield, text: 'Roles', href: '/roles' },
+        { icon: faFileAlt, text: 'System Logs', href: '/system-logs' },
       ],
     },
     { icon: faGear, text: 'Settings', href: '/settings' },
     { icon: faWarehouse, text: 'Warehouse', href: '/warehouse', 
       children: [
-        { icon: faCircle, text: 'items', href: '/users' },
-        { icon: faCircle, text: 'locations', href: '/locations' },
+        { icon: faCubes, text: 'Items', href: '/users' },
+        { icon: faMapMarkerAlt, text: 'Locations', href: '/locations' },
       ],
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
@@ -71,8 +80,8 @@ const Sidebar = ({ isOpen }) => {
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
     { icon: faStore, text: 'Store', href: '/store' },
-    { icon: faThLarge, text: 'Purchasing', href: '/purchase' },
-    { icon: faThLarge, text: 'Supplier', href: '/supplier' },
+    { icon: faShoppingCart, text: 'Purchasing', href: '/purchase' },
+    { icon: faHandshake, text: 'Suppliers', href: '/supplier' },
   ];
   return (
     <Box
