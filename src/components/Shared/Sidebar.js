@@ -19,6 +19,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
+import { icon } from '@fortawesome/fontawesome-svg-core';
 
 const Sidebar = ({ isOpen }) => {
   const theme = useTheme();
@@ -60,7 +61,11 @@ const Sidebar = ({ isOpen }) => {
       ],
      },
     { icon: faChartLine, text: 'Reports', href: '/reports' },
-    { icon: faUserCircle, text: 'General accounts', href: '/general-accounts' },
+    { icon: faUserCircle, text: 'General accounts', href: '/general-accounts',
+      children: [
+        {icon: faCircle, text: 'Selling', href: '/selling'},
+      ],
+     },
     { icon: faUserCircle, text: 'Screens', href: '/Screen' },
     { icon: faBox, text: 'Products', href: '/products' },
     { icon: faTv, text: 'Screens', href: '/Screen' },

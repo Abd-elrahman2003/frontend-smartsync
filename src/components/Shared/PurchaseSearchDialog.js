@@ -413,7 +413,7 @@ const PurchaseSearchDialog = ({
                           borderRadius: '4px',
                           fontSize: '0.75rem'
                         }}>
-                          {purchase.isPosted ? 'Posted' : 'Draft'}
+                          {purchase.isPosted ? 'POSTED' : 'UNPOSTED'}
                         </span>
                       </TableCell>
                       <TableCell>
