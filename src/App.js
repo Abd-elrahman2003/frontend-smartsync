@@ -18,6 +18,7 @@ import Roles from "./pages/Roles";
 import Products from "./pages/Products";
 import Store from "./pages/Store";
 import Purchasing from "./pages/Purchasing";
+import ReturnPurchasing from "./pages/ReturnPurchasing";
 import Supplier from "./pages/Supplier";
 
 const App = () => {
@@ -58,6 +59,7 @@ const App = () => {
         <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/purchase" element={<Purchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/return-purchase" element={<ReturnPurchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/supplier" element={<Supplier toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         {/* Check directly for token in localStorage and redirect if not found */}

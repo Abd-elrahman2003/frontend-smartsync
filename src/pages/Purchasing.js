@@ -595,7 +595,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
       setCurrentPage(prev => prev + 1);
     }
   };
-
+  
   const handlePrevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
@@ -606,8 +606,13 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
   useEffect(() => {
     if (!isFetching && purchaseData?.purchases) {
       setServerData(purchaseData.purchases);
+      
+      // Ensure currentPage is within bounds
+      if (currentPage > (purchaseData.totalPages || 1)) {
+        setCurrentPage(1);
+      }
     }
-  }, [isFetching, purchaseData]);
+  }, [isFetching, purchaseData, currentPage]);
 
   if (isLoading) {
     return (
@@ -976,19 +981,35 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
        </Dialog>
 {/* Search Dialog */}
 <PurchaseSearchDialog
-  open={searchDialogOpen}
-  onClose={() => setSearchDialogOpen(false)}
-  filters={searchParams}
-  onFilterChange={handleFilterChange}
-  onViewPurchase={handleViewPurchase}
-  suppliers={suppliersData.suppliers || []}
-  stores={storesData.stores || []}
-  products={productsData.products || []} // Add this line
-  fetchPurchases={async (params) => {
-    const result = await refetch(params);
-    return result.data;
-  }}
-/>
+      open={searchDialogOpen}
+      onClose={() => setSearchDialogOpen(false)}
+      filters={searchParams}
+      onFilterChange={(field, value) => {
+        setSearchParams(prev => ({
+          ...prev,
+          [field]: value
+        }));
+      }}
+      onViewPurchase={handleViewPurchase}
+      suppliers={suppliersData.suppliers || []}
+      stores={storesData.stores || []}
+      products={productsData.products || []}
+      fetchPurchases={async (params) => {
+        // Update the search params state
+        const updatedParams = {
+          ...searchParams,
+          ...params
+        };
+        setSearchParams(updatedParams);
+        
+        // Then refetch with these params - ensure we're using the page from params
+        const result = await refetch({
+          ...params
+        });
+        return result.data;
+      }}
+      setCurrentPage={setCurrentPage}
+    />
      </Box>
                     );
                   };

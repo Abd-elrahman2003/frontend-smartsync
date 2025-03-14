@@ -22,6 +22,7 @@ import {
   faCubes,
   faStore,
   faShoppingCart,
+  faExchangeAlt,
   faHandshake
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
@@ -72,7 +73,8 @@ const Sidebar = ({ isOpen }) => {
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
     { icon: faStore, text: 'Store', href: '/store' },
-    { icon: faShoppingCart, text: 'Purchasing', href: '/purchase' },
+    { icon: faShoppingCart, text: 'Purchase', href: '/purchase' },
+    { icon: faExchangeAlt, text: 'Purchase Return', href: '/return-purchase' },
     { icon: faHandshake, text: 'Suppliers', href: '/supplier' },
   ];
   return (
