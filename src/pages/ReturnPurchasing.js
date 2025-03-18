@@ -906,12 +906,10 @@ fetchReturnPurchases={async (params) => {
       ...params
     });
     
-    const adjustedPage = params.page ? params.page + 1 : purchaseCurrentPage + 1;
-
-    // Use a different variable name to avoid the conflict
+    // Remove the +1 adjustment - make sure backend and frontend use same page numbering
     const fetchResult = await refetchPurchases({
       ...params,
-    page: adjustedPage
+      page: params.page || purchaseCurrentPage
     });
     
     return fetchResult.data;

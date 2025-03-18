@@ -103,7 +103,7 @@ const ReturnedPurchaseSearchDialog = ({
   };
 
   // Search function
-  const handleSearch = async () =
+  const handleSearch = async () => {
     setLoading(true);
     try {
       // Format the search parameters for the API
@@ -112,7 +112,7 @@ const ReturnedPurchaseSearchDialog = ({
         id: searchFilters.id,
       receiveId: searchFilters.receiveId,
       supplierId: searchFilters.supplierId,
-      storeId: searchFilters.storeId, > {
+      storeId: searchFilters.storeId, 
       dateFrom: searchFilters.dateFrom,
       dateTo: searchFilters.dateTo,
       productId: searchFilters.productId,

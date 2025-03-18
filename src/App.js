@@ -20,6 +20,8 @@ import Store from "./pages/Store";
 import Purchasing from "./pages/Purchasing";
 import ReturnPurchasing from "./pages/ReturnPurchasing";
 import Supplier from "./pages/Supplier";
+import Selling from "./pages/Selling"
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -62,6 +64,7 @@ const App = () => {
         <Route path="/return-purchase" element={<ReturnPurchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/supplier" element={<Supplier toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/selling" element={<Selling toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         {/* Check directly for token in localStorage and redirect if not found */}
         <Route
           path="/"

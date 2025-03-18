@@ -12,6 +12,7 @@ import { purchasingApi } from '../Featuress/Purchasing/purchasingApi';
 import { supplierApi } from '../Featuress/Suppliers/supplierApi';
 import { transferApi } from '../Featuress/Transfer/transferApi';
 import { iotApi } from '../Featuress/Iot/IotApi'; 
+import { sellingApi } from '../Featuress/Selling/sellingApi';
 
 import authReducer from '../Featuress/auth/authSlice';
 import screensReducer from '../Featuress/screens/screensSlice';
@@ -26,6 +27,7 @@ import purchasingReducer from '../Featuress/Purchasing/purchasingSlice';
 import supplierReducer from '../Featuress/Suppliers/supplierSlice';
 import transferReducer from '../Featuress/Transfer/transferSlice';
 import iotReducer from '../Featuress/Iot/IotSlice'
+import sellingReducer  from '../Featuress/Selling/sellingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +38,7 @@ export const store = configureStore({
     [permissionsApi.reducerPath]: permissionsApi.reducer,
     [productsApi.reducerPath]: productsApi.reducer, 
     [purchasingApi.reducerPath]: purchasingApi.reducer,
+    [sellingApi.reducerPath]: sellingApi.reducer,
     [supplierApi.reducerPath]: supplierApi.reducer,
     [transferApi.reducerPath]: transferApi.reducer,
     
@@ -61,6 +64,7 @@ export const store = configureStore({
     suppliers: supplierReducer,
     transfer: transferReducer,
     iot:iotReducer,
+    Selling: sellingReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -77,6 +81,7 @@ export const store = configureStore({
       supplierApi.middleware,
       transferApi.middleware,
       iotApi.middleware,
+      sellingApi.middleware,
     ),
 });
 
