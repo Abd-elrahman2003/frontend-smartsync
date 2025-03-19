@@ -123,7 +123,14 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
     refetch: refetchReturns
   } = useGetReturnPurchasesQuery({
     page: currentPage,
-    ...returnSearchParams
+    id: returnSearchParams.id,
+    receiveId: returnSearchParams.receiveId,
+    supplierId: returnSearchParams.supplierId,  // Verify this is being used in the API
+    storeId: returnSearchParams.storeId,        // Verify this is being used in the API
+    dateFrom: returnSearchParams.dateFrom,
+    dateTo: returnSearchParams.dateTo,
+    productId: returnSearchParams.productId,
+    isPosted: returnSearchParams.isPosted
   }, {
     refetchOnMountOrArgChange: true
   });
@@ -423,15 +430,20 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
   // Handler to load the selected return purchase
   const handleViewReturnPurchase = (returnPurchase) => {
     setCurrentReturnOrder({
-      id: returnPurchase.id,
-      receiveId: returnPurchase.receiveId,
+      receiveId: returnPurchase.id,
       supplierId: returnPurchase.supplierId,
       storeId: returnPurchase.storeId,
-      note: returnPurchase.note || '',
-      date: returnPurchase.date,
-      items: returnPurchase.items || [],
-      isPosted: returnPurchase.isPosted,
-      isSaved: true
+      note: `Return for purchase #${returnPurchase.id}`,
+      date: new Date().toISOString().split('T')[0],
+      items: returnPurchase.items.map(item => ({
+        ...item,
+        id: `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        quantity: item.quantity, // Use the received quantity as a starting point
+        times: item.quantity * item.price // Calculate the times value
+      })),
+      isPosted: false,
+      isSaved: false,
+      id: null
     });
     setReturnSearchDialogOpen(false);
   };
@@ -765,7 +777,7 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
                   <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                     {columns.map((col) => (
                       <TableCell key={col} sx={styles.headerCell}>
-                        {col === 'times' ? 'Total' : col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
+                        {col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
                       </TableCell>
                     ))}
                     <TableCell sx={styles.headerCell}>Edit</TableCell>
@@ -864,26 +876,37 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
       <Footer />
 
       {/* Return Purchase Search Dialog */}
-      <ReturnedPurchaseSearchDialog
-        open={returnSearchDialogOpen}
-        onClose={() => setReturnSearchDialogOpen(false)}
-        filters={returnSearchParams}
-        onFilterChange={handleReturnFilterChange}
-        onViewReturnPurchase={handleViewReturnPurchase}
-        suppliers={suppliersData.suppliers || []}
-        stores={storesData.stores || []}
-        products={productsData.products || []}
-        // In your ReturnedPurchaseSearchDialog component:
-fetchReturnPurchases={async (params) => {
-  // Update the search params state first
-  setReturnSearchParams(params);
-  
-  // Then refetch with these params
-  const result = await refetchReturns();
-  return result.data;
-}}
-        setCurrentPage={setCurrentPage} // Add this line
-      />
+<ReturnedPurchaseSearchDialog
+  open={returnSearchDialogOpen}
+  onClose={() => setReturnSearchDialogOpen(false)}
+  filters={returnSearchParams}
+  onFilterChange={handleReturnFilterChange}
+  onViewReturnPurchase={handleViewReturnPurchase}
+  suppliers={suppliersData.suppliers || []}
+  stores={storesData.stores || []}
+  products={productsData.products || []}
+  fetchReturnPurchases={async (params) => {
+    if (params.page) {
+      setCurrentPage(params.page);
+    }
+    
+    // Update the search params state
+    setReturnSearchParams({
+      ...returnSearchParams,
+      ...params
+    });
+    
+    console.log(`Fetching page data for page: ${params.page}`);
+    const fetchResult = await refetchReturns({
+      ...params,
+      page: params.page
+    });
+    
+    return fetchResult.data;
+  }}
+  currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+/>
 
       {/* Purchase Search Dialog */}
       <PurchaseSearchDialog
@@ -906,10 +929,13 @@ fetchReturnPurchases={async (params) => {
       ...params
     });
     
-    // Remove the +1 adjustment - make sure backend and frontend use same page numbering
+    //const adjustedPage = params.page ? params.page + 1 : purchaseCurrentPage + 1;
+
+    // Use a different variable name to avoid the conflict
+    console.log(`Fetching page data for page: ${params.page}`);
     const fetchResult = await refetchPurchases({
       ...params,
-      page: params.page || purchaseCurrentPage
+      page: params.page
     });
     
     return fetchResult.data;

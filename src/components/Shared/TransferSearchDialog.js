@@ -23,25 +23,23 @@ import {
 import { Search, X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 
-const ReturnedPurchaseSearchDialog = ({
+const TransferSearchDialog = ({
   open,
   onClose,
   filters,
   onFilterChange,
-  onViewReturnPurchase,
-  suppliers = [],
+  onViewTransfer,
   stores = [],
   products = [],
-  fetchReturnPurchases,
+  fetchTransfers,
   currentPage = 1,
   setCurrentPage
 }) => {
   const theme = useTheme();
   const [searchFilters, setSearchFilters] = useState({
     id: "",
-    receiveId: "",
-    supplierId: "",
-    storeId: "",
+    storeFromId: "",
+    storeToId: "",
     dateFrom: "",
     dateTo: "",
     productId: "",
@@ -75,15 +73,13 @@ const ReturnedPurchaseSearchDialog = ({
     if (open) {
       setSearchFilters({
         id: filters.id || "",
-        receiveId: filters.receiveId || "",
-        supplierId: filters.supplierId || "",
-        storeId: filters.storeId || "",
+        storeFromId: filters.storeFromId || "",
+        storeToId: filters.storeToId || "",
         dateFrom: filters.dateFrom || "",
         dateTo: filters.dateTo || "",
         productId: filters.productId || "",
         isPosted: filters.isPosted || "",
       });
-      // Don't reset currentPage here, as it's now controlled by parent
     }
   }, [open, filters]);
 
@@ -104,7 +100,7 @@ const ReturnedPurchaseSearchDialog = ({
       fetchPageData(currentPage, rowsPerPage);
     }, 100);
   }, [currentPage]);
-
+  
   // Handle filter changes
   const handleFilterChange = (field, value) => {
     setSearchFilters((prev) => ({
@@ -130,14 +126,13 @@ const ReturnedPurchaseSearchDialog = ({
       
     setIsLoading(true);
     
-    console.log(`Fetching return purchases for page: ${pageNum}, rows: ${rowsLimit}`);
+    console.log(`Fetching page data for page: ${pageNum}, rows: ${rowsLimit}`);
       
     try {
-      const response = await fetchReturnPurchases({
+      const response = await fetchTransfers({
         id: searchFilters.id,
-        receiveId: searchFilters.receiveId,
-        supplierId: searchFilters.supplierId,
-        storeId: searchFilters.storeId,
+        storeFromId: searchFilters.storeFromId,
+        storeToId: searchFilters.storeToId,
         dateFrom: searchFilters.dateFrom,
         dateTo: searchFilters.dateTo,
         productId: searchFilters.productId,
@@ -151,34 +146,40 @@ const ReturnedPurchaseSearchDialog = ({
       if (!controller.signal.aborted) {
         console.log("API Response:", response);
         
-        if (response && response.returnPurchases) {
-          setFilteredResults(response.returnPurchases);
-          setTotalCount(response.totalCount || 0);
-        } else if (response && response.orders) {
-          // Map the orders to match the expected format in the component
-          const mappedPurchases = response.orders.map(order => ({
-            id: order.id,
-            receiveId: order.receiveId || order.purchaseHeaderId,
-            date: order.date,
-            supplierId: order.orgId || order.supplierId, // Assuming orgId is equivalent to supplierId
-            storeId: order.purchasereturnProduct?.[0]?.transaction?.fromId || order.storeId || "",
-            isPosted: order.post,
-            note: order.note || "",
-            // Create the items array from purchasereturnProduct
-            items: (order.purchasereturnProduct || []).map(item => ({
-              id: item.id || `item-${item.productId}-${Date.now()}`,
-              productId: item.transaction?.productId || item.productId,
-              productName: item.product?.name || "Unknown Product",
-              productCode: item.product?.code || "N/A",
-              quantity: item.transaction?.quantity || item.quantity,
-              price: item.transaction?.price || item.price,
-              times: (item.transaction?.quantity || item.quantity) * (item.transaction?.price || item.price)
-            }))
-          }));
+        // Check for valid response structure
+        if (response && response.orders) {
+          // Enhance transfer orders with store names
+          const enhancedTransfers = response.orders.map((transfer) => {
+            const fromStore = stores.find(s => s.id === transfer.storeFromId);
+            const toStore = stores.find(s => s.id === transfer.storeToId);
+              
+            return {
+              ...transfer,
+              fromStoreName: fromStore ? fromStore.name : 'Unknown Store',
+              toStoreName: toStore ? toStore.name : 'Unknown Store',
+              isPosted: transfer.post, // Using 'post' field for status
+              items: transfer.transferProduct?.map(tp => {
+                const product = products?.find(p => p.id === tp.transaction.productId);
+                  
+                return {
+                  productId: tp.transaction.productId,
+                  productName: product ? product.name : 'Unknown Product',
+                  productCode: product ? product.code : 'N/A',
+                  quantity: tp.transaction.quantity,
+                  price: tp.transaction.price
+                };
+              }) || []
+            };
+          });
+            
+          setFilteredResults(enhancedTransfers);
           
-          setFilteredResults(mappedPurchases);
-          setTotalCount(response.totalOrders || response.totalCount || mappedPurchases.length);
+          // Make sure to correctly handle the total count from response
+          const count = response.totalOrders || 0;
+          console.log(`Setting total count to: ${count}`);
+          setTotalCount(count);
         } else {
+          console.log("No orders found in response");
           setFilteredResults([]);
           setTotalCount(0);
         }
@@ -188,7 +189,7 @@ const ReturnedPurchaseSearchDialog = ({
     } catch (error) {
       // Only log and update state if not aborted
       if (error.name !== 'AbortError') {
-        console.error('Error searching return purchases:', error);
+        console.error('Error searching transfers:', error);
         setFilteredResults([]);
         setTotalCount(0);
         setIsLoading(false);
@@ -217,9 +218,8 @@ const ReturnedPurchaseSearchDialog = ({
     
     // Clear filter values in parent component
     onFilterChange("id", "");
-    onFilterChange("receiveId", "");
-    onFilterChange("supplierId", "");
-    onFilterChange("storeId", "");
+    onFilterChange("storeFromId", "");
+    onFilterChange("storeToId", "");
     onFilterChange("dateFrom", "");
     onFilterChange("dateTo", "");
     onFilterChange("productId", "");
@@ -228,9 +228,8 @@ const ReturnedPurchaseSearchDialog = ({
     // Clear local search filters
     setSearchFilters({
       id: "",
-      receiveId: "",
-      supplierId: "",
-      storeId: "",
+      storeFromId: "",
+      storeToId: "",
       dateFrom: "",
       dateTo: "",
       productId: "",
@@ -252,8 +251,8 @@ const ReturnedPurchaseSearchDialog = ({
     onClose();
   };
 
-  const handleViewClick = (returnPurchase) => {
-    onViewReturnPurchase(returnPurchase);
+  const handleViewClick = (transfer) => {
+    onViewTransfer(transfer);
     onClose();
   };
 
@@ -290,29 +289,17 @@ const ReturnedPurchaseSearchDialog = ({
     }
   };
 
-  // Get supplier name by ID
-  const getSupplierName = (supplierId) => {
-    const supplier = suppliers.find((s) => s.id === supplierId);
-    return supplier ? supplier.fullName : "Unknown";
-  };
-
-  // Get store name by ID
-  const getStoreName = (storeId) => {
-    const store = stores.find((s) => s.id === storeId);
-    return store ? store.name : "Unknown";
-  };
-
-  // Calculate total amount for a return purchase
-  const calculateTotalAmount = (returnPurchase) => {
-    if (!returnPurchase.items || returnPurchase.items.length === 0) return "0.00";
+  // Calculate total quantity for a transfer
+  const calculateTotalQuantity = (transfer) => {
+    if (!transfer.items || transfer.items.length === 0) return "0";
     
-    const total = returnPurchase.items.reduce((sum, item) => {
+    const total = transfer.items.reduce((sum, item) => {
       const quantity = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.price) || 0;
       return sum + quantity * price;
     }, 0);
     
-    return total.toFixed(2);
+    return total.toString();
   };
   
   // Generate pagination numbers
@@ -370,54 +357,44 @@ const ReturnedPurchaseSearchDialog = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Search Return Purchases</DialogTitle>
+      <DialogTitle>Search Transfer Orders</DialogTitle>
       <DialogContent>
         {/* Search Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label="Return Purchase ID"
+                label="Transfer ID"
                 value={searchFilters.id}
                 onChange={(e) => handleFilterChange("id", e.target.value)}
                 variant="outlined"
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                label="Received Purchase ID"
-                value={searchFilters.receiveId}
-                onChange={(e) => handleFilterChange("receiveId", e.target.value)}
-                variant="outlined"
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Autocomplete
-                options={suppliers}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={suppliers.find((s) => s.id === searchFilters.supplierId) || null}
-                onChange={(_, newValue) =>
-                  handleFilterChange("supplierId", newValue ? newValue.id : "")
-                }
-                renderInput={(params) => (
-                  <TextField {...params} label="Supplier" size="small" />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <Autocomplete
                 options={stores}
                 getOptionLabel={(option) => option.name || ""}
-                value={stores.find((s) => s.id === searchFilters.storeId) || null}
+                value={stores.find((s) => s.id === searchFilters.storeFromId) || null}
                 onChange={(_, newValue) =>
-                  handleFilterChange("storeId", newValue ? newValue.id : "")
+                  handleFilterChange("storeFromId", newValue ? newValue.id : "")
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="Store" size="small" />
+                  <TextField {...params} label="From Store" size="small" />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Autocomplete
+                options={stores}
+                getOptionLabel={(option) => option.name || ""}
+                value={stores.find((s) => s.id === searchFilters.storeToId) || null}
+                onChange={(_, newValue) =>
+                  handleFilterChange("storeToId", newValue ? newValue.id : "")
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="To Store" size="small" />
                 )}
               />
             </Grid>
@@ -456,7 +433,7 @@ const ReturnedPurchaseSearchDialog = ({
                 color="textSecondary" 
                 sx={{ p: 3, backgroundColor: '#f5f5f5', borderRadius: 2 }}
               >
-                No return purchases found matching your search criteria. 
+                No transfer orders found matching your search criteria. 
                 Try adjusting your filters or search terms.
               </Typography>
             )}
@@ -467,10 +444,9 @@ const ReturnedPurchaseSearchDialog = ({
                   <TableHead>
                     <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                       <TableCell sx={styles.headerCell}>ID</TableCell>
-                      <TableCell sx={styles.headerCell}>Receive ID</TableCell>
-                      <TableCell sx={styles.headerCell}>Supplier</TableCell>
-                      <TableCell sx={styles.headerCell}>Store</TableCell>
                       <TableCell sx={styles.headerCell}>Date</TableCell>
+                      <TableCell sx={styles.headerCell}>From Store</TableCell>
+                      <TableCell sx={styles.headerCell}>To Store</TableCell>
                       <TableCell sx={styles.headerCell}>Items</TableCell>
                       <TableCell sx={styles.headerCell}>Total Amount</TableCell>
                       <TableCell sx={styles.headerCell}>Status</TableCell>
@@ -478,36 +454,25 @@ const ReturnedPurchaseSearchDialog = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredResults.map((returnPurchase) => (
+                    {filteredResults.map((transfer) => (
                       <TableRow
-                        key={returnPurchase.id}
+                        key={transfer.id}
                         sx={styles.tableRow}
                         hover
                       >
-                        <TableCell sx={styles.cell}>{returnPurchase.id}</TableCell>
-                        <TableCell sx={styles.cell}>{returnPurchase.receiveId}</TableCell>
-                        <TableCell sx={styles.cell}>
-                          {getSupplierName(returnPurchase.supplierId)}
-                        </TableCell>
-                        <TableCell sx={styles.cell}>
-                          {getStoreName(returnPurchase.storeId)}
-                        </TableCell>
-                        <TableCell sx={styles.cell}>
-                          {formatDate(returnPurchase.date)}
-                        </TableCell>
-                        <TableCell sx={styles.cell}>
-                          {returnPurchase.items?.length || 0}
-                        </TableCell>
-                        <TableCell sx={styles.cell}>
-                          {calculateTotalAmount(returnPurchase)}
-                        </TableCell>
+                        <TableCell sx={styles.cell}>{transfer.id}</TableCell>
+                        <TableCell sx={styles.cell}>{formatDate(transfer.date)}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.fromStoreName}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.toStoreName}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.items?.length || 0}</TableCell>
+                        <TableCell sx={styles.cell}>{calculateTotalQuantity(transfer)}</TableCell>
                         <TableCell sx={styles.cell}>
                           <Box
                             sx={{
-                              backgroundColor: returnPurchase.isPosted
+                              backgroundColor: transfer.isPosted
                                 ? theme.palette.success.light
                                 : theme.palette.warning.light,
-                              color: returnPurchase.isPosted
+                              color: transfer.isPosted
                                 ? theme.palette.success.contrastText
                                 : theme.palette.warning.contrastText,
                               borderRadius: "4px",
@@ -516,13 +481,13 @@ const ReturnedPurchaseSearchDialog = ({
                               display: "inline-block",
                             }}
                           >
-                            {returnPurchase.isPosted ? "Posted" : "Not Posted"}
+                            {transfer.isPosted ? "Posted" : "Not Posted"}
                           </Box>
                         </TableCell>
                         <TableCell>
                           <IconButton
                             color="primary"
-                            onClick={() => handleViewClick(returnPurchase)}
+                            onClick={() => handleViewClick(transfer)}
                             size="small"
                           >
                             <Eye size={16} />
@@ -590,4 +555,4 @@ const ReturnedPurchaseSearchDialog = ({
   );
 };
 
-export default ReturnedPurchaseSearchDialog;
+export default TransferSearchDialog;

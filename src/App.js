@@ -20,7 +20,8 @@ import Store from "./pages/Store";
 import Purchasing from "./pages/Purchasing";
 import ReturnPurchasing from "./pages/ReturnPurchasing";
 import Supplier from "./pages/Supplier";
-import Selling from "./pages/Selling"
+import Selling from "./pages/Selling";
+import Transfers from "./pages/Transfers";
 
 
 const App = () => {
@@ -62,6 +63,7 @@ const App = () => {
         <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/purchase" element={<Purchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/return-purchase" element={<ReturnPurchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/transfers" element={<Transfers toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/supplier" element={<Supplier toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/products" element={<Products toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/selling" element={<Selling toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
