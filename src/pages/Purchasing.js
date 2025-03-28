@@ -444,9 +444,9 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
         quantity: item.quantity, // Use the received quantity as a starting point
         times: item.quantity * item.price // Calculate the times value
       })),
-      isPosted: false,
-      isSaved: false,
-      id: null
+      isPosted: purchase.isPosted,
+      isSaved: true,
+      id: purchase.id
     });
     setSearchDialogOpen(false);
   };

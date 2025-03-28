@@ -21,6 +21,7 @@ import {
   Paper,
   Grid,
   Autocomplete,
+  Checkbox,
 } from "@mui/material";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { useTheme } from "@mui/material/styles";
@@ -69,6 +70,9 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [purchaseCurrentPage, setPurchaseCurrentPage] = useState(1);
   
+  // New state for selected items
+  const [selectedItems, setSelectedItems] = useState([]);
+
   // Separate search params for each dialog
   const [returnSearchParams, setReturnSearchParams] = useState({
     id: "",
@@ -147,7 +151,7 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
     dateFrom: purchaseSearchParams.dateFrom,
     dateTo: purchaseSearchParams.dateTo,
     productId: purchaseSearchParams.productId,
-    isPosted: purchaseSearchParams.isPosted
+    isPosted: true
   }, {
     refetchOnMountOrArgChange: true
   });
@@ -204,6 +208,10 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
       fontFamily: 'monospace',
       fontWeight: 'medium',
       display: 'inline-block'
+    },
+    checkboxCell: {
+      width: '50px',
+      padding: '0 4px'
     }
   }), [theme]);
 
@@ -316,6 +324,38 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
 
     setOpenItemDialog(false);
     toast.success(`${validItems.length} item(s) added to return order`);
+  };
+
+  // Handler for selecting/deselecting individual items
+  const handleItemSelect = (itemId) => {
+    setSelectedItems(prev => 
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  // Handler for selecting all items
+  const handleSelectAllItems = () => {
+    if (selectedItems.length === currentReturnOrder.items.length) {
+      // If all are selected, deselect all
+      setSelectedItems([]);
+    } else {
+      // Select all item IDs
+      setSelectedItems(currentReturnOrder.items.map(item => item.id));
+    }
+  };
+
+  // Handler to delete selected items
+  const handleDeleteSelectedItems = () => {
+    setCurrentReturnOrder(prev => ({
+      ...prev,
+      items: prev.items.filter(item => !selectedItems.includes(item.id))
+    }));
+    
+    // Clear selection after deletion
+    setSelectedItems([]);
+    toast.success(`${selectedItems.length} item(s) removed from return order`);
   };
 
   // Cell Renderer
@@ -441,9 +481,9 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
         quantity: item.quantity, // Use the received quantity as a starting point
         times: item.quantity * item.price // Calculate the times value
       })),
-      isPosted: false,
-      isSaved: false,
-      id: null
+      isPosted: returnPurchase.isPosted,
+      isSaved: true,
+      id: returnPurchase.id
     });
     setReturnSearchDialogOpen(false);
   };
@@ -472,39 +512,38 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
 
   // Save the entire return purchase order to the server
   const handleSaveOrder = async () => {
-    if (!currentReturnOrder.receiveId || !currentReturnOrder.supplierId || !currentReturnOrder.storeId || currentReturnOrder.items.length === 0) {
+    if (!currentReturnOrder.receiveId || !currentReturnOrder.supplierId || !currentReturnOrder.storeId) {
       toast.error("Please fill all required fields before saving.");
       return false;
     }
-
-    // Check if any items have quantity
-    const hasItemsWithQuantity = currentReturnOrder.items.some(item => 
-      item.quantity && parseFloat(item.quantity) > 0
+  
+    // Filter only selected items
+    const selectedItemsToSave = currentReturnOrder.items.filter(item => 
+      selectedItems.includes(item.id) && 
+      item.quantity && 
+      parseFloat(item.quantity) > 0
     );
-
-    if (!hasItemsWithQuantity) {
-      toast.error("Please add at least one item with quantity greater than 0");
+  
+    if (selectedItemsToSave.length === 0) {
+      toast.error("Please select at least one item with quantity greater than 0");
       return false;
     }
-
+  
     try {
       setIsSaving(true);
       const dataToSend = {
         purchaseHeaderId: currentReturnOrder.receiveId,
         note: currentReturnOrder.note,
-        items: currentReturnOrder.items
-          .filter(item => item.quantity && parseFloat(item.quantity) > 0)
-          .map(item => ({
-              productId: item.productId,
-              quantity: parseFloat(item.quantity)
-          }))
+        items: selectedItemsToSave.map(item => ({
+          productId: item.productId,
+          quantity: parseFloat(item.quantity)
+        }))
       };
       
       console.log(dataToSend);
-
+  
       const result = await createReturnPurchase(dataToSend).unwrap();
-
-      // Update how you access the ID and set the state:
+  
       const orderId = result.returnOrder?.id;
       
       if (!orderId) {
@@ -512,15 +551,21 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
         return false;
       }
       
+      // Update current return order state
       setCurrentReturnOrder(prev => ({
         ...prev,
         id: orderId,
         isSaved: true,
-        isPosted: result.returnOrder.post
+        isPosted: result.returnOrder.post,
+        // Remove saved items from the list
+        items: prev.items.filter(item => !selectedItems.includes(item.id))
       }));
-
+  
+      // Clear selected items after saving
+      setSelectedItems([]);
+  
       refetchReturns();
-      toast.success("Return order saved successfully!");
+      toast.success(`${selectedItemsToSave.length} item(s) saved successfully!`);
       return true;
     } catch (error) {
       toast.error(error?.data?.message || "Failed to save return order");
@@ -777,19 +822,35 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
+                    {/* Checkbox column header */}
+                    <TableCell sx={{...styles.headerCell, ...styles.checkboxCell}}>
+                      <Checkbox
+                        checked={selectedItems.length === currentReturnOrder.items.length && currentReturnOrder.items.length > 0}
+                        indeterminate={selectedItems.length > 0 && selectedItems.length < currentReturnOrder.items.length}
+                        onChange={handleSelectAllItems}
+                        disabled={currentReturnOrder.isPosted || isSaving}
+                      />
+                    </TableCell>
                     {columns.map((col) => (
                       <TableCell key={col} sx={styles.headerCell}>
                         {col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
                       </TableCell>
                     ))}
                     <TableCell sx={styles.headerCell}>Edit</TableCell>
-                    <TableCell sx={styles.headerCell}>Delete</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {currentReturnOrder.items.length > 0 ? (
                     currentReturnOrder.items.map((item) => (
                       <TableRow key={item.id} sx={styles.tableRow}>
+                        {/* Checkbox column */}
+                        <TableCell sx={styles.checkboxCell}>
+                          <Checkbox
+                            checked={selectedItems.includes(item.id)}
+                            onChange={() => handleItemSelect(item.id)}
+                            disabled={currentReturnOrder.isPosted || isSaving}
+                          />
+                        </TableCell>
                         {columns.map((col) => (
                           <TableCell key={col} sx={styles.cell}>
                             {renderCell(item, col)}
@@ -803,16 +864,6 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
                             sx={styles.iconButton}
                           >
                             <FaEdit />
-                          </IconButton>
-                        </TableCell>
-                        <TableCell sx={styles.cell}>
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDialogOpen('delete', item)}
-                            disabled={currentReturnOrder.isPosted || isSaving}
-                            sx={styles.iconButton}
-                          >
-                            <FaTrash />
                           </IconButton>
                         </TableCell>
                       </TableRow>
