@@ -187,11 +187,14 @@ const Location = ({ toggleSidebar, isSidebarOpen }) => {
             </table>
           </div>
 
+          <Box sx={{ display: "flex", justifyContent: "center", marginTop: theme.spacing(2) }}>
           <Pagination
-            page={page}
-            count={10}
-            onChange={(event, value) => handlePageChange(value)}
+          page={page}
+          count={10}
+          onChange={(event, value) => handlePageChange(value)}
           />
+          </Box>
+
         </Box>
       </Box>
       <Footer />

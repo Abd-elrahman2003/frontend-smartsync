@@ -151,37 +151,43 @@ const ReturnedPurchaseSearchDialog = ({
       if (!controller.signal.aborted) {
         console.log("API Response:", response);
         
-        if (response && response.returnPurchases) {
-          setFilteredResults(response.returnPurchases);
-          setTotalCount(response.totalCount || 0);
-        } else if (response && response.orders) {
-          // Map the orders to match the expected format in the component
-          const mappedPurchases = response.orders.map(order => ({
-            id: order.id,
-            receiveId: order.receiveId || order.purchaseHeaderId,
-            date: order.date,
-            supplierId: order.orgId || order.supplierId, // Assuming orgId is equivalent to supplierId
-            storeId: order.purchasereturnProduct?.[0]?.transaction?.fromId || order.storeId || "",
-            isPosted: order.post,
-            note: order.note || "",
-            // Create the items array from purchasereturnProduct
-            items: (order.purchasereturnProduct || []).map(item => ({
-              id: item.id || `item-${item.productId}-${Date.now()}`,
-              productId: item.transaction?.productId || item.productId,
-              productName: item.product?.name || "Unknown Product",
-              productCode: item.product?.code || "N/A",
-              quantity: item.transaction?.quantity || item.quantity,
-              price: item.transaction?.price || item.price,
-              times: (item.transaction?.quantity || item.quantity) * (item.transaction?.price || item.price)
-            }))
-          }));
+        // Enhanced purchase return data mapping
+        const mappedReturnPurchases = response.orders.map(returnPurchase => {
+          // Find associated receive details
+          const receive = returnPurchase.receive || {};
+          const supplier = suppliers.find(s => s.id === receive.supplierId);
+          const store = stores.find(s => s.id === receive.storeId);
           
-          setFilteredResults(mappedPurchases);
-          setTotalCount(response.totalOrders || response.totalCount || mappedPurchases.length);
-        } else {
-          setFilteredResults([]);
-          setTotalCount(0);
-        }
+          return {
+            id: returnPurchase.id,
+            receiveId: returnPurchase.receiveId,
+            date: returnPurchase.date,
+            supplierId: receive.supplierId,
+            supplierName: supplier ? supplier.fullName : 'Unknown Supplier',
+            storeId: receive.storeId,
+            storeName: store ? store.name : 'Unknown Store',
+            isPosted: returnPurchase.post,
+            note: returnPurchase.note || "",
+            items: (returnPurchase.purchasereturnProduct || []).map(item => {
+              const product = products.find(p => p.id === item.transaction.productId);
+              
+              return {
+                id: item.transactionId,
+                productId: item.transaction.productId,
+                productName: product ? product.name : "Unknown Product",
+                productCode: product ? product.code : "N/A",
+                quantity: item.transaction.quantity,
+                price: item.transaction.price,
+                times: item.transaction.quantity * item.transaction.price
+              };
+            })
+          };
+        });
+        
+        setFilteredResults(mappedReturnPurchases);
+        setTotalCount(response.totalOrders || 0);
+        setTotalPages(response.totalPages || 1);
+        
         setSearched(true);
         setIsLoading(false);
       }
@@ -292,7 +298,11 @@ const ReturnedPurchaseSearchDialog = ({
 
   // Get supplier name by ID
   const getSupplierName = (supplierId) => {
-    const supplier = suppliers.find((s) => s.id === supplierId);
+    console.log("Looking for supplier with ID:", supplierId);
+    console.log("Available suppliers:", suppliers);
+    // Try to find by orgId first (since that's what's being used in mapping)
+    const supplier = suppliers.find((s) => s.orgId === supplierId || s.id === supplierId);
+    console.log("Found supplier:", supplier);
     return supplier ? supplier.fullName : "Unknown";
   };
 

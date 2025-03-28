@@ -26,7 +26,8 @@ import {
   faShoppingCart,
   faExchangeAlt,
   faHandshake,
-  faShare
+  faShare,
+  faTags
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -74,10 +75,9 @@ const Sidebar = ({ isOpen }) => {
     { icon: faChartLine, text: 'Reports', href: '/reports' },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts',
       children: [
-        {icon: faCircle, text: 'Selling', href: '/selling'},
+        {icon: faTags, text: 'Selling', href: '/selling'},
       ],
      },
-    { icon: faUserCircle, text: 'Screens', href: '/Screen' },
     { icon: faBox, text: 'Products', href: '/products' },
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },

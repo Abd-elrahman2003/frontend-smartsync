@@ -714,6 +714,7 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
                     <TextField
                       {...params}
                       label="Supplier"
+                      disabled={true}
                       sx={{ height: '56px' }}
                     />
                   )}
@@ -735,6 +736,7 @@ const ReturnPurchase = ({ toggleSidebar, isSidebarOpen }) => {
                     <TextField
                       {...params}
                       label="Store"
+                      disabled={true}
                       sx={{ height: '56px' }}
                     />
                   )}
