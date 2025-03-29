@@ -23,8 +23,9 @@ export const sellingApi = createApi({
         if (id) params.append("id", id);
         if (storeId) params.append("storeId", storeId);
         if (customerId) params.append("customerId", customerId);
-        if (status) params.append("status", status);
-        
+        if (status) {
+          params.append("status", status);
+        }
         const queryString = params.toString();
         if (queryString) {
           url += `?${queryString}`;
