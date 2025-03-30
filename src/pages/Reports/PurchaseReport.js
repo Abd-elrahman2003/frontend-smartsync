@@ -224,7 +224,7 @@ const PurchaseReport = ({ toggleSidebar, isSidebarOpen }) => {
         <Box sx={{ flex: 1, padding: theme.spacing(15), overflow: "auto" }}>
           {/* Title and Search Buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5"></Typography>
+            <Typography variant="h5">Purchase Report</Typography>
             <Box>
               <Button
                 variant="contained"
