@@ -72,7 +72,12 @@ const Sidebar = ({ isOpen }) => {
         { icon: faMapMarkerAlt, text: 'Locations', href: '/locations' },
       ],
      },
-    { icon: faChartLine, text: 'Reports', href: '/reports' },
+    { icon: faChartLine, text: 'Reports', href: '/reports',
+      children: [
+        { icon: faCircle, text: 'Current Stock', href: '/stock-report' },
+        { icon: faCircle, text: 'Purchase Report', href: '/purchase-report' },
+      ],
+     },
     { icon: faUserCircle, text: 'General accounts', href: '/general-accounts',
       children: [
         {icon: faTags, text: 'Selling', href: '/selling'},
