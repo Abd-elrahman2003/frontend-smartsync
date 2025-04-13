@@ -69,8 +69,13 @@ const Selling = ({ toggleSidebar, isSidebarOpen }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState({
     id: "",
-    storeId: "",
-    customerId: ""
+    fromStoreId: "",
+    customerId: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+    productId: "",
+    isPosted: ""
   });
 
   // Client-side state for current selling order
@@ -113,11 +118,18 @@ const Selling = ({ toggleSidebar, isSidebarOpen }) => {
     refetch
   } = useGetSellingsQuery({
     page: currentPage,
-    ...searchParams
+  id: searchParams.id,
+  customerId: searchParams.customerId,
+  storeId: searchParams.storeId,
+  dateFrom: searchParams.dateFrom,
+  dateTo: searchParams.dateTo,
+  productId: searchParams.productId,
+  isPosted: searchParams.isPosted,
+  status: searchParams.status
   }, {
     refetchOnMountOrArgChange: true
   });
-
+  console.log("customerId:", searchParams.customerId);
   const {
     data: storesData = {},
     isLoading: isLoadingStores
@@ -472,10 +484,11 @@ const handleEditItem = () => {
 
   // Add this handler to load the selected selling order
 const handleViewSelling = (selling) => {
+  const storeId = selling.sellingProduct?.[0]?.transaction?.fromId || "";
   setCurrentSellingOrder({
     id: selling.id,
     customerId: selling.customerId,
-    storeId: selling.storeId,
+    storeId: storeId,
     note: selling.note || '',
     date: selling.date,
     items: selling.items || [],
@@ -515,6 +528,7 @@ const handleViewSelling = (selling) => {
   };
 
   const handleFilterChange = (field, value) => {
+    console.log(`Main component setting ${field} to:`, value);
     setSearchParams(prev => ({
       ...prev,
       [field]: value
@@ -774,13 +788,12 @@ const handleViewSelling = (selling) => {
               onClick={handleOpenItemDialog}
               disabled={currentSellingOrder.isPosted || isSaving}
             >
-              Add Items to Order
+              Add Items
             </Button>
           </Box>
 
           {/* Order Items Table */}
           <Box sx={{ padding: 1, mt: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Current Order Items</Typography>
             <TableContainer>
               <Table>
                 <TableHead>
@@ -923,17 +936,27 @@ const handleViewSelling = (selling) => {
                   helperText="Auto-filled from product database"
                 />
               </Grid>
-              <Grid item xs={12} md={2} sx={{ display: "flex", alignItems: "center" }}>
-                {index > 0 && (
-                  <IconButton
-                    color="error"
-                    onClick={() => handleRemoveItemRow(index)}
-                    disabled={currentSellingOrder.isPosted || isSaving}
-                  >
-                    <FaTrash />
-                  </IconButton>
-                )}
-              </Grid>
+              
+              <Grid item xs={12} md={2} sx={{ display: "flex", alignItems: "center", gap: 1, mt: -5 }}>
+                              {index > 0 && (
+                                <IconButton
+                                  color="error"
+                                  onClick={() => handleRemoveItemRow(index)}
+                                  disabled={currentSellingOrder.isPosted || isSaving}
+                                >
+                                  <FaTrash />
+                                </IconButton>
+                              )}
+                              <IconButton
+                                color="primary"
+                                variant="outlined"
+                                onClick={handleAddAnotherItem}
+                                disabled={currentSellingOrder.isPosted || isSaving}
+                              >
+                                <FaPlus />
+                              </IconButton>
+                            </Grid> 
+
               <Grid item xs={12}>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Typography variant="body2">
@@ -943,17 +966,6 @@ const handleViewSelling = (selling) => {
               </Grid>
             </Grid>
           ))}
-
-          <Button
-            onClick={handleAddAnotherItem}
-            color="primary"
-            variant="outlined"
-            startIcon={<FaPlus />}
-            sx={{ mt: 2 }}
-            disabled={currentSellingOrder.isPosted || isSaving}
-          >
-            Add Another Item
-          </Button>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseItemDialog}>Cancel</Button>
@@ -963,7 +975,7 @@ const handleViewSelling = (selling) => {
             variant="contained"
             disabled={multipleItems.every(item => !item.productId || !item.quantity) || currentSellingOrder.isPosted || isSaving}
           >
-            Add All Items to Order
+            Add All Items
           </Button>
         </DialogActions>
       </Dialog>
@@ -980,21 +992,27 @@ const handleViewSelling = (selling) => {
   stores={storesData?.stores || []} // Pass stores properly
   products={productsData?.products || []}
   fetchSellingOrders={async (params) => {
-    try {
-      // Use the same query structure as your useGetSellingsQuery
-      const result = await refetch({
-        page: params.page,
-        limit: params.limit,
-        id: params.id,
-        customerId: params.customerId,
-        storeId: params.storeId
-      });
-      return result.data;
-    } catch (error) {
-      console.error("Error fetching selling orders:", error);
-      return { orders: [], totalOrders: 0 };
+
+    if (params.page) {
+      setCurrentPage(params.page);
     }
+  
+    setSearchParams((prev) => ({
+      ...searchParams,
+      ...params,
+    }));
+  
+    console.log(`Fetching page data for page: ${params.page}`);
+  
+    const fetchResult = await refetch({
+      ...params,
+      page: params.page,
+    });
+  
+    return fetchResult.data;
   }}
+  currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
 />
 
     </Box>
