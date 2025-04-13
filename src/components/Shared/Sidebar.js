@@ -84,6 +84,7 @@ const Sidebar = ({ isOpen }) => {
     { icon: faStore, text: 'Store', href: '/store' },
     { icon: faShoppingCart, text: 'Purchase', href: '/purchase' },
     { icon: faShare, text: 'Purchase Return', href: '/return-purchase' },
+    { icon: faShare, text: 'selling Return', href: '/return-selling' },
     { icon: faExchangeAlt, text: 'Transfer', href: '/transfers' },
     { icon: faHandshake, text: 'Suppliers', href: '/supplier' },
   ];
