@@ -11,6 +11,7 @@ import { locationsApi } from '../Featuress/locations/locationApis';
 import { purchasingApi } from '../Featuress/Purchasing/purchasingApi';
 import { supplierApi } from '../Featuress/Suppliers/supplierApi';
 import { transfersApi } from '../Featuress/Transfer/transfersApi';
+import { adjustApi } from '../Featuress/Adjust/adjustApi';
 import { iotApi } from '../Featuress/Iot/IotApi'; 
 import { sellingApi } from '../Featuress/Selling/sellingApi';
 import { stockReportApi } from '../Featuress/Reports/StockReport/stockReportApi';
@@ -28,6 +29,7 @@ import storeReducer from '../Featuress/Store/storeSlice';
 import purchasingReducer from '../Featuress/Purchasing/purchasingSlice';
 import supplierReducer from '../Featuress/Suppliers/supplierSlice';
 import transfersReducer from '../Featuress/Transfer/transfersSlice';
+import adjustReducer from '../Featuress/Adjust/adjustSlice';
 import iotReducer from '../Featuress/Iot/IotSlice'
 import sellingReducer  from '../Featuress/Selling/sellingSlice';
 import stockReportReducer from '../Featuress/Reports/StockReport/stockReportSlice';
@@ -46,6 +48,7 @@ export const store = configureStore({
     [sellingApi.reducerPath]: sellingApi.reducer,
     [supplierApi.reducerPath]: supplierApi.reducer,
     [transfersApi.reducerPath]: transfersApi.reducer,
+    [adjustApi.reducerPath]: adjustApi.reducer,
     [stockReportApi.reducerPath]: stockReportApi.reducer,
     [purchaseReportApi.reducerPath]: purchaseReportApi.reducer,
 
@@ -69,6 +72,7 @@ export const store = configureStore({
     purchasing: purchasingReducer,
     suppliers: supplierReducer,
     transfers: transfersReducer,
+    adjust: adjustReducer,
     iot:iotReducer,
     Selling: sellingReducer,
     stockReport: stockReportReducer,
@@ -88,6 +92,7 @@ export const store = configureStore({
       purchasingApi.middleware,
       supplierApi.middleware,
       transfersApi.middleware,
+      adjustApi.middleware,
       iotApi.middleware,
       sellingApi.middleware,
       stockReportApi.middleware,
