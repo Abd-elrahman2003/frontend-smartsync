@@ -16,13 +16,17 @@ export const purchasingApi = createApi({
   endpoints: (builder) => ({
     // Purchase endpoints
     getPurchases: builder.query({
-      query: ({ page = 1, id, storeId, supplierId }) => {
+      query: ({ page = 1, id, storeId, supplierId, dateFrom, dateTo, productId, isPosted }) => {
         let url = `/purchase/${page}`;
         const params = new URLSearchParams();
         
         if (id) params.append("id", id);
         if (storeId) params.append("storeId", storeId);
         if (supplierId) params.append("supplierId", supplierId);
+        if (dateFrom) params.append("dateFrom", dateFrom);
+        if (dateTo) params.append("dateTo", dateTo);
+        if (productId) params.append("productId", productId);
+        if (isPosted !== "") params.append("isPosted", isPosted);
         
         const queryString = params.toString();
         if (queryString) {
@@ -70,12 +74,14 @@ export const purchasingApi = createApi({
     
     // Return Purchase endpoints
     getReturnPurchases: builder.query({
-      query: ({ page = 1, id, receiveId }) => {
+      query: ({ page = 1, id, receiveId, storeId, supplierId }) => {
         let url = `/purchase/return/${page}`;
         const params = new URLSearchParams();
         
         if (id) params.append("id", id);
         if (receiveId) params.append("receiveId", receiveId);
+        if (storeId) params.append("storeId", storeId);
+        if (supplierId) params.append("supplierId", supplierId);
         
         const queryString = params.toString();
         if (queryString) {

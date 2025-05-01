@@ -13,6 +13,8 @@ import {
   faChevronDown,
   faClipboardList,
   faUserShield,
+  faUserCircle,
+  faChartLine,
   faUserTie,
   faBox,
   faMapMarkerAlt,
@@ -22,10 +24,15 @@ import {
   faCubes,
   faStore,
   faShoppingCart,
-  faHandshake
+  faExchangeAlt,
+  faHandshake,
+  faShare,
+  faTags,
+  faTruckLoading
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
+import { icon } from '@fortawesome/fontawesome-svg-core';
 
 const Sidebar = ({ isOpen }) => {
   const theme = useTheme();
@@ -66,13 +73,26 @@ const Sidebar = ({ isOpen }) => {
         { icon: faMapMarkerAlt, text: 'Locations', href: '/locations' },
       ],
      },
-    { icon: faClipboardList, text: 'Reports', href: '/reports' },
-    { icon: faUserTie, text: 'General Accounts', href: '/general-accounts' },
+    { icon: faChartLine, text: 'Reports', href: '/reports',
+      children: [
+        { icon: faCircle, text: 'Current Stock', href: '/stock-report' },
+        { icon: faCircle, text: 'Purchase Report', href: '/purchase-report' },
+      ],
+     },
+    { icon: faUserCircle, text: 'General accounts', href: '/general-accounts',
+      children: [
+        {icon: faTags, text: 'Selling', href: '/selling'},
+      ],
+     },
     { icon: faBox, text: 'Products', href: '/products' },
     { icon: faTv, text: 'Screens', href: '/Screen' },
     { icon: faThLarge, text: 'Categories', href: '/category' },
     { icon: faStore, text: 'Store', href: '/store' },
-    { icon: faShoppingCart, text: 'Purchasing', href: '/purchase' },
+    { icon: faShoppingCart, text: 'Purchase', href: '/purchase' },
+    { icon: faShare, text: 'Purchase Return', href: '/return-purchase' },
+    { icon: faShare, text: 'selling Return', href: '/return-selling' },
+    { icon: faExchangeAlt, text: 'Transfer', href: '/transfers' },
+    { icon: faTruckLoading, text: 'Adjust', href: '/adjust' },
     { icon: faHandshake, text: 'Suppliers', href: '/supplier' },
   ];
   return (

@@ -23,23 +23,21 @@ import {
 import { Search, X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 
-const PurchaseSearchDialog = ({
+const AdjustSearchDialog = ({
   open,
   onClose,
   filters,
   onFilterChange,
-  onViewPurchase,
-  suppliers = [],
+  onViewAdjust,
   stores = [],
   products = [],
-  fetchPurchases,
+  fetchAdjusts,
   currentPage = 1,
   setCurrentPage
 }) => {
   const theme = useTheme();
   const [searchFilters, setSearchFilters] = useState({
     id: "",
-    supplierId: "",
     storeId: "",
     dateFrom: "",
     dateTo: "",
@@ -74,14 +72,12 @@ const PurchaseSearchDialog = ({
     if (open) {
       setSearchFilters({
         id: filters.id || "",
-        supplierId: filters.supplierId || "",
         storeId: filters.storeId || "",
         dateFrom: filters.dateFrom || "",
         dateTo: filters.dateTo || "",
         productId: filters.productId || "",
         isPosted: filters.isPosted || "",
       });
-      // Don't reset currentPage here, as it's now controlled by parent
     }
   }, [open, filters]);
 
@@ -103,7 +99,6 @@ const PurchaseSearchDialog = ({
     }, 100);
   }, [currentPage]);
   
-
   // Handle filter changes
   const handleFilterChange = (field, value) => {
     setSearchFilters((prev) => ({
@@ -132,9 +127,8 @@ const PurchaseSearchDialog = ({
     console.log(`Fetching page data for page: ${pageNum}, rows: ${rowsLimit}`);
       
     try {
-      const response = await fetchPurchases({
+      const response = await fetchAdjusts({
         id: searchFilters.id,
-        supplierId: searchFilters.supplierId,
         storeId: searchFilters.storeId,
         dateFrom: searchFilters.dateFrom,
         dateTo: searchFilters.dateTo,
@@ -151,31 +145,30 @@ const PurchaseSearchDialog = ({
         
         // Check for valid response structure
         if (response && response.orders) {
-          // Enhance purchase orders with supplier and store names
-          const enhancedPurchases = response.orders.map((purchase) => {
-            const supplier = suppliers.find(s => s.id === purchase.supplierId);
-            const store = stores.find(s => s.id === purchase.storeId);
+          // Enhance adjust orders with store names and product details
+          const enhancedAdjusts = response.orders.map((adjust) => {
+            const store = stores.find(s => s.id === adjust.storeId);
               
             return {
-              ...purchase,
-              supplierName: supplier ? supplier.fullName : 'Unknown Supplier',
+              ...adjust,
               storeName: store ? store.name : 'Unknown Store',
-              isPosted: purchase.post, // Using 'post' field for status
-              items: purchase.purchaseProduct?.map(pp => {
-                const product = products?.find(p => p.id === pp.transaction.productId);
+              isPosted: adjust.post, // Using 'post' field for status
+              items: adjust.adjustProduct?.map(ap => {
+                const product = products?.find(p => p.id === ap.transaction.productId);
                   
                 return {
-                  productId: pp.transaction.productId,
+                  productId: ap.transaction.productId,
                   productName: product ? product.name : 'Unknown Product',
                   productCode: product ? product.code : 'N/A',
-                  quantity: pp.transaction.quantity,
-                  price: pp.transaction.price
+                  quantity: ap.transaction.quantity,
+                  price: ap.transaction.price,
+                  type: ap.transaction.type // ADJUST_ADD or ADUST_REMOVE
                 };
               }) || []
             };
           });
             
-          setFilteredResults(enhancedPurchases);
+          setFilteredResults(enhancedAdjusts);
           
           // Make sure to correctly handle the total count from response
           const count = response.totalOrders || 0;
@@ -192,7 +185,7 @@ const PurchaseSearchDialog = ({
     } catch (error) {
       // Only log and update state if not aborted
       if (error.name !== 'AbortError') {
-        console.error('Error searching purchases:', error);
+        console.error('Error searching adjusts:', error);
         setFilteredResults([]);
         setTotalCount(0);
         setIsLoading(false);
@@ -221,7 +214,6 @@ const PurchaseSearchDialog = ({
     
     // Clear filter values in parent component
     onFilterChange("id", "");
-    onFilterChange("supplierId", "");
     onFilterChange("storeId", "");
     onFilterChange("dateFrom", "");
     onFilterChange("dateTo", "");
@@ -231,7 +223,6 @@ const PurchaseSearchDialog = ({
     // Clear local search filters
     setSearchFilters({
       id: "",
-      supplierId: "",
       storeId: "",
       dateFrom: "",
       dateTo: "",
@@ -254,8 +245,8 @@ const PurchaseSearchDialog = ({
     onClose();
   };
 
-  const handleViewClick = (purchase) => {
-    onViewPurchase(purchase);
+  const handleViewClick = (adjust) => {
+    onViewAdjust(adjust);
     onClose();
   };
 
@@ -292,17 +283,27 @@ const PurchaseSearchDialog = ({
     }
   };
 
-  // Calculate total amount for a purchase order
-  const calculateTotalAmount = (purchase) => {
-    if (!purchase.items || purchase.items.length === 0) return "0.00";
+  // Calculate total quantity and value for an adjust order
+  const calculateSummary = (adjust) => {
+    if (!adjust.items || adjust.items.length === 0) return { totalQuantity: 0, totalValue: 0 };
     
-    const total = purchase.items.reduce((sum, item) => {
+    const summary = adjust.items.reduce((acc, item) => {
       const quantity = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.price) || 0;
-      return sum + quantity * price;
-    }, 0);
+      const value = quantity * price;
+      
+      if (item.type === 'ADJUST_ADD') {
+        acc.totalQuantity += quantity;
+        acc.totalValue += value;
+      } else if (item.type === 'ADUST_REMOVE') {
+        acc.totalQuantity -= quantity;
+        acc.totalValue -= value;
+      }
+      
+      return acc;
+    }, { totalQuantity: 0, totalValue: 0 });
     
-    return total.toFixed(2);
+    return summary;
   };
   
   // Generate pagination numbers
@@ -358,9 +359,22 @@ const PurchaseSearchDialog = ({
     });
   };
 
+  // Determine adjustment type for display
+  const getAdjustmentTypeDisplay = (adjust) => {
+    if (!adjust.items || adjust.items.length === 0) return "N/A";
+    
+    const hasAdditions = adjust.items.some(item => item.type === 'ADJUST_ADD');
+    const hasRemovals = adjust.items.some(item => item.type === 'ADUST_REMOVE');
+    
+    if (hasAdditions && hasRemovals) return "Mixed";
+    if (hasAdditions) return "Addition";
+    if (hasRemovals) return "Removal";
+    return "N/A";
+  };
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Search Purchase Orders</DialogTitle>
+      <DialogTitle>Search Inventory Adjustments</DialogTitle>
       <DialogContent>
         {/* Search Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -368,24 +382,11 @@ const PurchaseSearchDialog = ({
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label="Order ID"
+                label="Adjustment ID"
                 value={searchFilters.id}
                 onChange={(e) => handleFilterChange("id", e.target.value)}
                 variant="outlined"
                 size="small"
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Autocomplete
-                options={suppliers}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={suppliers.find((s) => s.id === searchFilters.supplierId) || null}
-                onChange={(_, newValue) =>
-                  handleFilterChange("supplierId", newValue ? newValue.id : "")
-                }
-                renderInput={(params) => (
-                  <TextField {...params} label="Supplier" size="small" />
-                )}
               />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -398,6 +399,19 @@ const PurchaseSearchDialog = ({
                 }
                 renderInput={(params) => (
                   <TextField {...params} label="Store" size="small" />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Autocomplete
+                options={products}
+                getOptionLabel={(option) => `${option.code} - ${option.name}` || ""}
+                value={products.find((p) => p.id === searchFilters.productId) || null}
+                onChange={(_, newValue) =>
+                  handleFilterChange("productId", newValue ? newValue.id : "")
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="Product" size="small" />
                 )}
               />
             </Grid>
@@ -436,7 +450,7 @@ const PurchaseSearchDialog = ({
                 color="textSecondary" 
                 sx={{ p: 3, backgroundColor: '#f5f5f5', borderRadius: 2 }}
               >
-                No purchase orders found matching your search criteria. 
+                No adjustment orders found matching your search criteria. 
                 Try adjusting your filters or search terms.
               </Typography>
             )}
@@ -448,56 +462,61 @@ const PurchaseSearchDialog = ({
                     <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                       <TableCell sx={styles.headerCell}>ID</TableCell>
                       <TableCell sx={styles.headerCell}>Date</TableCell>
-                      <TableCell sx={styles.headerCell}>Supplier</TableCell>
                       <TableCell sx={styles.headerCell}>Store</TableCell>
+                      <TableCell sx={styles.headerCell}>Type</TableCell>
                       <TableCell sx={styles.headerCell}>Items</TableCell>
-                      <TableCell sx={styles.headerCell}>Total Amount</TableCell>
+                      <TableCell sx={styles.headerCell}>Net Quantity</TableCell>
+                      <TableCell sx={styles.headerCell}>Net Value</TableCell>
                       <TableCell sx={styles.headerCell}>Status</TableCell>
                       <TableCell sx={styles.headerCell}>Action</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredResults.map((purchase) => (
-                      <TableRow
-                        key={purchase.id}
-                        sx={styles.tableRow}
-                        hover
-                      >
-                        <TableCell sx={styles.cell}>{purchase.id}</TableCell>
-                        <TableCell sx={styles.cell}>{formatDate(purchase.date)}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.supplierName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.storeName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.items?.length || 0}</TableCell>
-                        <TableCell sx={styles.cell}>{calculateTotalAmount(purchase)}</TableCell>
-                        <TableCell sx={styles.cell}>
-                          <Box
-                            sx={{
-                              backgroundColor: purchase.isPosted
-                                ? theme.palette.success.light
-                                : theme.palette.warning.light,
-                              color: purchase.isPosted
-                                ? theme.palette.success.contrastText
-                                : theme.palette.warning.contrastText,
-                              borderRadius: "4px",
-                              px: 1,
-                              py: 0.5,
-                              display: "inline-block",
-                            }}
-                          >
-                            {purchase.isPosted ? "Posted" : "Not Posted"}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleViewClick(purchase)}
-                            size="small"
-                          >
-                            <Eye size={16} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredResults.map((adjust) => {
+                      const summary = calculateSummary(adjust);
+                      return (
+                        <TableRow
+                          key={adjust.id}
+                          sx={styles.tableRow}
+                          hover
+                        >
+                          <TableCell sx={styles.cell}>{adjust.id}</TableCell>
+                          <TableCell sx={styles.cell}>{formatDate(adjust.date)}</TableCell>
+                          <TableCell sx={styles.cell}>{adjust.storeName}</TableCell>
+                          <TableCell sx={styles.cell}>{getAdjustmentTypeDisplay(adjust)}</TableCell>
+                          <TableCell sx={styles.cell}>{adjust.items?.length || 0}</TableCell>
+                          <TableCell sx={styles.cell}>{summary.totalQuantity.toFixed(2)}</TableCell>
+                          <TableCell sx={styles.cell}>{summary.totalValue.toFixed(2)}</TableCell>
+                          <TableCell sx={styles.cell}>
+                            <Box
+                              sx={{
+                                backgroundColor: adjust.isPosted
+                                  ? theme.palette.success.light
+                                  : theme.palette.warning.light,
+                                color: adjust.isPosted
+                                  ? theme.palette.success.contrastText
+                                  : theme.palette.warning.contrastText,
+                                borderRadius: "4px",
+                                px: 1,
+                                py: 0.5,
+                                display: "inline-block",
+                              }}
+                            >
+                              {adjust.isPosted ? "Posted" : "Not Posted"}
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleViewClick(adjust)}
+                              size="small"
+                            >
+                              <Eye size={16} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -558,4 +577,4 @@ const PurchaseSearchDialog = ({
   );
 };
 
-export default PurchaseSearchDialog;
+export default AdjustSearchDialog;

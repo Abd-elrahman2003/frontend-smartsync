@@ -23,22 +23,23 @@ import {
 import { Search, X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 
-const PurchaseSearchDialog = ({
+const ReturnedPurchaseSearchDialog = ({
   open,
   onClose,
   filters,
   onFilterChange,
-  onViewPurchase,
+  onViewReturnPurchase,
   suppliers = [],
   stores = [],
   products = [],
-  fetchPurchases,
+  fetchReturnPurchases,
   currentPage = 1,
   setCurrentPage
 }) => {
   const theme = useTheme();
   const [searchFilters, setSearchFilters] = useState({
     id: "",
+    receiveId: "",
     supplierId: "",
     storeId: "",
     dateFrom: "",
@@ -74,6 +75,7 @@ const PurchaseSearchDialog = ({
     if (open) {
       setSearchFilters({
         id: filters.id || "",
+        receiveId: filters.receiveId || "",
         supplierId: filters.supplierId || "",
         storeId: filters.storeId || "",
         dateFrom: filters.dateFrom || "",
@@ -102,7 +104,6 @@ const PurchaseSearchDialog = ({
       fetchPageData(currentPage, rowsPerPage);
     }, 100);
   }, [currentPage]);
-  
 
   // Handle filter changes
   const handleFilterChange = (field, value) => {
@@ -129,11 +130,12 @@ const PurchaseSearchDialog = ({
       
     setIsLoading(true);
     
-    console.log(`Fetching page data for page: ${pageNum}, rows: ${rowsLimit}`);
+    console.log(`Fetching return purchases for page: ${pageNum}, rows: ${rowsLimit}`);
       
     try {
-      const response = await fetchPurchases({
+      const response = await fetchReturnPurchases({
         id: searchFilters.id,
+        receiveId: searchFilters.receiveId,
         supplierId: searchFilters.supplierId,
         storeId: searchFilters.storeId,
         dateFrom: searchFilters.dateFrom,
@@ -149,50 +151,50 @@ const PurchaseSearchDialog = ({
       if (!controller.signal.aborted) {
         console.log("API Response:", response);
         
-        // Check for valid response structure
-        if (response && response.orders) {
-          // Enhance purchase orders with supplier and store names
-          const enhancedPurchases = response.orders.map((purchase) => {
-            const supplier = suppliers.find(s => s.id === purchase.supplierId);
-            const store = stores.find(s => s.id === purchase.storeId);
-              
-            return {
-              ...purchase,
-              supplierName: supplier ? supplier.fullName : 'Unknown Supplier',
-              storeName: store ? store.name : 'Unknown Store',
-              isPosted: purchase.post, // Using 'post' field for status
-              items: purchase.purchaseProduct?.map(pp => {
-                const product = products?.find(p => p.id === pp.transaction.productId);
-                  
-                return {
-                  productId: pp.transaction.productId,
-                  productName: product ? product.name : 'Unknown Product',
-                  productCode: product ? product.code : 'N/A',
-                  quantity: pp.transaction.quantity,
-                  price: pp.transaction.price
-                };
-              }) || []
-            };
-          });
-            
-          setFilteredResults(enhancedPurchases);
+        // Enhanced purchase return data mapping
+        const mappedReturnPurchases = response.orders.map(returnPurchase => {
+          // Find associated receive details
+          const receive = returnPurchase.receive || {};
+          const supplier = suppliers.find(s => s.id === receive.supplierId);
+          const store = stores.find(s => s.id === receive.storeId);
           
-          // Make sure to correctly handle the total count from response
-          const count = response.totalOrders || 0;
-          console.log(`Setting total count to: ${count}`);
-          setTotalCount(count);
-        } else {
-          console.log("No orders found in response");
-          setFilteredResults([]);
-          setTotalCount(0);
-        }
+          return {
+            id: returnPurchase.id,
+            receiveId: returnPurchase.receiveId,
+            date: returnPurchase.date,
+            supplierId: receive.supplierId,
+            supplierName: supplier ? supplier.fullName : 'Unknown Supplier',
+            storeId: receive.storeId,
+            storeName: store ? store.name : 'Unknown Store',
+            isPosted: returnPurchase.post,
+            note: returnPurchase.note || "",
+            items: (returnPurchase.purchasereturnProduct || []).map(item => {
+              const product = products.find(p => p.id === item.transaction.productId);
+              
+              return {
+                id: item.transactionId,
+                productId: item.transaction.productId,
+                productName: product ? product.name : "Unknown Product",
+                productCode: product ? product.code : "N/A",
+                quantity: item.transaction.quantity,
+                price: item.transaction.price,
+                times: item.transaction.quantity * item.transaction.price
+              };
+            })
+          };
+        });
+        
+        setFilteredResults(mappedReturnPurchases);
+        setTotalCount(response.totalOrders || 0);
+        setTotalPages(response.totalPages || 1);
+        
         setSearched(true);
         setIsLoading(false);
       }
     } catch (error) {
       // Only log and update state if not aborted
       if (error.name !== 'AbortError') {
-        console.error('Error searching purchases:', error);
+        console.error('Error searching return purchases:', error);
         setFilteredResults([]);
         setTotalCount(0);
         setIsLoading(false);
@@ -221,6 +223,7 @@ const PurchaseSearchDialog = ({
     
     // Clear filter values in parent component
     onFilterChange("id", "");
+    onFilterChange("receiveId", "");
     onFilterChange("supplierId", "");
     onFilterChange("storeId", "");
     onFilterChange("dateFrom", "");
@@ -231,6 +234,7 @@ const PurchaseSearchDialog = ({
     // Clear local search filters
     setSearchFilters({
       id: "",
+      receiveId: "",
       supplierId: "",
       storeId: "",
       dateFrom: "",
@@ -254,8 +258,8 @@ const PurchaseSearchDialog = ({
     onClose();
   };
 
-  const handleViewClick = (purchase) => {
-    onViewPurchase(purchase);
+  const handleViewClick = (returnPurchase) => {
+    onViewReturnPurchase(returnPurchase);
     onClose();
   };
 
@@ -292,11 +296,27 @@ const PurchaseSearchDialog = ({
     }
   };
 
-  // Calculate total amount for a purchase order
-  const calculateTotalAmount = (purchase) => {
-    if (!purchase.items || purchase.items.length === 0) return "0.00";
+  // Get supplier name by ID
+  const getSupplierName = (supplierId) => {
+    console.log("Looking for supplier with ID:", supplierId);
+    console.log("Available suppliers:", suppliers);
+    // Try to find by orgId first (since that's what's being used in mapping)
+    const supplier = suppliers.find((s) => s.orgId === supplierId || s.id === supplierId);
+    console.log("Found supplier:", supplier);
+    return supplier ? supplier.fullName : "Unknown";
+  };
+
+  // Get store name by ID
+  const getStoreName = (storeId) => {
+    const store = stores.find((s) => s.id === storeId);
+    return store ? store.name : "Unknown";
+  };
+
+  // Calculate total amount for a return purchase
+  const calculateTotalAmount = (returnPurchase) => {
+    if (!returnPurchase.items || returnPurchase.items.length === 0) return "0.00";
     
-    const total = purchase.items.reduce((sum, item) => {
+    const total = returnPurchase.items.reduce((sum, item) => {
       const quantity = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.price) || 0;
       return sum + quantity * price;
@@ -360,22 +380,32 @@ const PurchaseSearchDialog = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Search Purchase Orders</DialogTitle>
+      <DialogTitle>Search Return Purchases</DialogTitle>
       <DialogContent>
         {/* Search Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
-                label="Order ID"
+                label="Return Purchase ID"
                 value={searchFilters.id}
                 onChange={(e) => handleFilterChange("id", e.target.value)}
                 variant="outlined"
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Received Purchase ID"
+                value={searchFilters.receiveId}
+                onChange={(e) => handleFilterChange("receiveId", e.target.value)}
+                variant="outlined"
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
               <Autocomplete
                 options={suppliers}
                 getOptionLabel={(option) => option.fullName || ""}
@@ -388,7 +418,7 @@ const PurchaseSearchDialog = ({
                 )}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <Autocomplete
                 options={stores}
                 getOptionLabel={(option) => option.name || ""}
@@ -436,7 +466,7 @@ const PurchaseSearchDialog = ({
                 color="textSecondary" 
                 sx={{ p: 3, backgroundColor: '#f5f5f5', borderRadius: 2 }}
               >
-                No purchase orders found matching your search criteria. 
+                No return purchases found matching your search criteria. 
                 Try adjusting your filters or search terms.
               </Typography>
             )}
@@ -447,9 +477,10 @@ const PurchaseSearchDialog = ({
                   <TableHead>
                     <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                       <TableCell sx={styles.headerCell}>ID</TableCell>
-                      <TableCell sx={styles.headerCell}>Date</TableCell>
+                      <TableCell sx={styles.headerCell}>Receive ID</TableCell>
                       <TableCell sx={styles.headerCell}>Supplier</TableCell>
                       <TableCell sx={styles.headerCell}>Store</TableCell>
+                      <TableCell sx={styles.headerCell}>Date</TableCell>
                       <TableCell sx={styles.headerCell}>Items</TableCell>
                       <TableCell sx={styles.headerCell}>Total Amount</TableCell>
                       <TableCell sx={styles.headerCell}>Status</TableCell>
@@ -457,25 +488,36 @@ const PurchaseSearchDialog = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredResults.map((purchase) => (
+                    {filteredResults.map((returnPurchase) => (
                       <TableRow
-                        key={purchase.id}
+                        key={returnPurchase.id}
                         sx={styles.tableRow}
                         hover
                       >
-                        <TableCell sx={styles.cell}>{purchase.id}</TableCell>
-                        <TableCell sx={styles.cell}>{formatDate(purchase.date)}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.supplierName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.storeName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.items?.length || 0}</TableCell>
-                        <TableCell sx={styles.cell}>{calculateTotalAmount(purchase)}</TableCell>
+                        <TableCell sx={styles.cell}>{returnPurchase.id}</TableCell>
+                        <TableCell sx={styles.cell}>{returnPurchase.receiveId}</TableCell>
+                        <TableCell sx={styles.cell}>
+                          {getSupplierName(returnPurchase.supplierId)}
+                        </TableCell>
+                        <TableCell sx={styles.cell}>
+                          {getStoreName(returnPurchase.storeId)}
+                        </TableCell>
+                        <TableCell sx={styles.cell}>
+                          {formatDate(returnPurchase.date)}
+                        </TableCell>
+                        <TableCell sx={styles.cell}>
+                          {returnPurchase.items?.length || 0}
+                        </TableCell>
+                        <TableCell sx={styles.cell}>
+                          {calculateTotalAmount(returnPurchase)}
+                        </TableCell>
                         <TableCell sx={styles.cell}>
                           <Box
                             sx={{
-                              backgroundColor: purchase.isPosted
+                              backgroundColor: returnPurchase.isPosted
                                 ? theme.palette.success.light
                                 : theme.palette.warning.light,
-                              color: purchase.isPosted
+                              color: returnPurchase.isPosted
                                 ? theme.palette.success.contrastText
                                 : theme.palette.warning.contrastText,
                               borderRadius: "4px",
@@ -484,13 +526,13 @@ const PurchaseSearchDialog = ({
                               display: "inline-block",
                             }}
                           >
-                            {purchase.isPosted ? "Posted" : "Not Posted"}
+                            {returnPurchase.isPosted ? "Posted" : "Not Posted"}
                           </Box>
                         </TableCell>
                         <TableCell>
                           <IconButton
                             color="primary"
-                            onClick={() => handleViewClick(purchase)}
+                            onClick={() => handleViewClick(returnPurchase)}
                             size="small"
                           >
                             <Eye size={16} />
@@ -558,4 +600,4 @@ const PurchaseSearchDialog = ({
   );
 };
 
-export default PurchaseSearchDialog;
+export default ReturnedPurchaseSearchDialog;

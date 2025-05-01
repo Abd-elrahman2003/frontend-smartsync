@@ -18,6 +18,9 @@ import {
   Typography,
   CircularProgress,
   FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Paper,
   Grid,
   Autocomplete,
@@ -28,16 +31,15 @@ import Sidebar from "../components/Shared/Sidebar";
 import Header from "../components/Shared/Header";
 import Footer from "../components/Shared/Footer";
 import OperationsButtons from "../components/Shared/OperationsButtons";
-import PurchaseSearchDialog from "../components/Shared/PurchaseSearchDialog";
 import Pagination from "../components/Common/Pagination";
+import SellingSearchDialog from "../components/Shared/SellingSearchDialog";
 import {
-  useGetPurchasesQuery,
-  useCreatePurchaseMutation,
-  useUpdatePurchaseMutation,
-  useDeletePurchaseMutation,
-  useTogglePostPurchaseMutation,
-} from "../Redux/Featuress/Purchasing/purchasingApi";
-import { useGetSuppliersQuery } from "../Redux/Featuress/Suppliers/supplierApi";
+  useGetSellingsQuery,
+  useCreateSellingMutation,
+  useUpdateSellingMutation,
+  useDeleteSellingMutation,
+  useTogglePostSellingMutation,
+} from "../Redux/Featuress/Selling/sellingApi";
 import { useGetStoresQuery } from "../Redux/Featuress/Store/storeApi";
 import { useGetProductsQuery } from "../Redux/Featuress/Products/ProductsApi";
 import { toast } from "react-toastify";
@@ -58,7 +60,7 @@ const ConfirmationDialog = ({ open, title, content, onConfirm, onCancel, confirm
   </Dialog>
 );
 
-const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
+const Selling = ({ toggleSidebar, isSidebarOpen }) => {
   const theme = useTheme();
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openItemDialog, setOpenItemDialog] = useState(false);
@@ -67,17 +69,18 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useState({
     id: "",
-    storeId: "",
-    supplierId: "",
+    fromStoreId: "",
+    customerId: "",
+    status: "",
     dateFrom: "",
     dateTo: "",
     productId: "",
     isPosted: ""
   });
 
-  // Client-side state for current purchase order
-  const [currentPurchaseOrder, setCurrentPurchaseOrder] = useState({
-    supplierId: "",
+  // Client-side state for current selling order
+  const [currentSellingOrder, setCurrentSellingOrder] = useState({
+    customerId: "",
     storeId: "",
     note: "",
     date: new Date().toISOString().split('T')[0],
@@ -90,7 +93,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
   // State for save button visibility and loading
   const [isSaving, setIsSaving] = useState(false);
 
-  // State for server data (existing purchase orders)
+  // State for server data (existing selling orders)
   const [serverData, setServerData] = useState([]);
   const [activeDialog, setActiveDialog] = useState({ type: null, data: null });
   const [editData, setEditData] = useState({
@@ -109,28 +112,24 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
 
   // Queries
   const {
-    data: purchaseData = {},
+    data: sellingData = {},
     isLoading,
     isFetching,
     refetch
-  } = useGetPurchasesQuery({
-    page: currentPage, // Use the new state variable
-    id: searchParams.id,
-    supplierId: searchParams.supplierId,
-    storeId: searchParams.storeId,
-    dateFrom: searchParams.dateFrom,
-    dateTo: searchParams.dateTo,
-    productId: searchParams.productId,
-    isPosted: searchParams.isPosted
+  } = useGetSellingsQuery({
+    page: currentPage,
+  id: searchParams.id,
+  customerId: searchParams.customerId,
+  storeId: searchParams.storeId,
+  dateFrom: searchParams.dateFrom,
+  dateTo: searchParams.dateTo,
+  productId: searchParams.productId,
+  isPosted: searchParams.isPosted,
+  status: searchParams.status
   }, {
     refetchOnMountOrArgChange: true
   });
-
-  const {
-    data: suppliersData = {},
-    isLoading: isLoadingSuppliers
-  } = useGetSuppliersQuery(1);
-
+  console.log("customerId:", searchParams.customerId);
   const {
     data: storesData = {},
     isLoading: isLoadingStores
@@ -141,11 +140,12 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
     isLoading: isLoadingProducts
   } = useGetProductsQuery(1);
 
+
   // Mutations
-  const [createPurchase] = useCreatePurchaseMutation();
-  const [updatePurchase] = useUpdatePurchaseMutation();
-  const [deletePurchase] = useDeletePurchaseMutation();
-  const [togglePostPurchase] = useTogglePostPurchaseMutation();
+  const [createSelling] = useCreateSellingMutation();
+  const [updateSelling] = useUpdateSellingMutation();
+  const [deleteSelling] = useDeleteSellingMutation();
+  const [togglePostSelling] = useTogglePostSellingMutation();
 
   const columns = ["productName", "productCode", "quantity", "price", "times"];
 
@@ -216,14 +216,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
     ]);
   };
 
-
-  const handlePurchaseFilterChange = (field, value) => {
-    setSearchParams(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
+  
   // Function to handle removing an item row
   const handleRemoveItemRow = (indexToRemove) => {
     setMultipleItems(multipleItems.filter((_, index) => index !== indexToRemove));
@@ -265,14 +258,14 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
       return;
     }
 
-    // Add all valid items to the current purchase order
+    // Add all valid items to the current selling order
     const itemsWithIds = validItems.map(item => ({
       ...item,
       id: `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       times: parseFloat(item.quantity) * parseFloat(item.price)
     }));
 
-    setCurrentPurchaseOrder(prev => ({
+    setCurrentSellingOrder(prev => ({
       ...prev,
       items: [...prev.items, ...itemsWithIds]
     }));
@@ -310,111 +303,111 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
   };
 
   // Edit Dialog Content
-  const renderEditDialog = () => (
-    <Dialog open={activeDialog.type === 'edit'} onClose={handleDialogClose}>
-      <DialogTitle>Edit Item</DialogTitle>
-      <DialogContent>
-      <FormControl fullWidth margin="normal" disabled={currentPurchaseOrder.isPosted || isSaving}>
-  <Autocomplete
-    options={productsData.products || []}
-    getOptionLabel={(option) => `${option.name} (${option.code})`}
-    value={productsData.products?.find(p => p.id === activeDialog.data?.productId) || null}
-    onChange={(_, newValue) => {
-      if (newValue) {
-        const product = newValue;
-        setActiveDialog(prev => ({
-          ...prev,
-          data: {
-            ...prev.data,
-            productId: product.id,
-            productName: product.name,
-            productCode: product.code,
-            price: product.price
-          }
-        }));
-        setEditData(prev => ({
-          ...prev,
-          price: product.price
-        }));
-      }
-    }}
-    disabled={isLoadingProducts || currentPurchaseOrder.isPosted || isSaving}
-    renderInput={(params) => (
+const renderEditDialog = () => (
+  <Dialog open={activeDialog.type === 'edit'} onClose={handleDialogClose}>
+    <DialogTitle>Edit Item</DialogTitle>
+    <DialogContent>
+      <FormControl fullWidth margin="normal" disabled={currentSellingOrder.isPosted || isSaving}>
+         <Autocomplete
+           options={productsData.products || []}
+           getOptionLabel={(option) => `${option.name} (${option.code})`}
+           value={productsData.products?.find(p => p.id === activeDialog.data?.productId) || null}
+           onChange={(_, newValue) => {
+             if (newValue) {
+               const product = newValue;
+               setActiveDialog(prev => ({
+                 ...prev,
+                 data: {
+                   ...prev.data,
+                   productId: product.id,
+                   productName: product.name,
+                   productCode: product.code,
+                   price: product.price
+                 }
+               }));
+               setEditData(prev => ({
+                 ...prev,
+                 price: product.price
+               }));
+             }
+           }}
+           disabled={isLoadingProducts || currentSellingOrder.isPosted || isSaving}
+           renderInput={(params) => (
+             <TextField
+               {...params}
+               label="Product"
+             />
+           )}
+         />
+      </FormControl>
+      
+      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+        Code: <span style={{ fontFamily: 'monospace' }}>{activeDialog.data?.productCode}</span>
+      </Typography>
+      
       <TextField
-        {...params}
-        label="Product"
+        fullWidth
+        margin="normal"
+        label="Quantity"
+        type="number"
+        value={editData.quantity}
+        onChange={(e) => setEditData(prev => ({ ...prev, quantity: e.target.value }))}
       />
-    )}
-  />
-</FormControl>
-        
-        <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-          Code: <span style={{ fontFamily: 'monospace' }}>{activeDialog.data?.productCode}</span>
-        </Typography>
-        
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Quantity"
-          type="number"
-          value={editData.quantity}
-          onChange={(e) => setEditData(prev => ({ ...prev, quantity: e.target.value }))}
-        />
-        
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Price"
-          type="number"
-          value={editData.price}
-          disabled={true}
-          helperText="Price is fetched from product database"
-        />
-        
-        <Typography variant="subtitle1" sx={{ mt: 2 }}>
-          Total: {(editData.quantity * editData.price).toFixed(2)}
-        </Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleDialogClose}>Cancel</Button>
-        <Button onClick={handleEditItem} color="primary">Save</Button>
-      </DialogActions>
-    </Dialog>
-  );
+      
+      <TextField
+        fullWidth
+        margin="normal"
+        label="Price"
+        type="number"
+        value={editData.price}
+        disabled={true}
+        helperText="Price is fetched from product database"
+      />
+      
+      <Typography variant="subtitle1" sx={{ mt: 2 }}>
+        Total: {(editData.quantity * editData.price).toFixed(2)}
+      </Typography>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={handleDialogClose}>Cancel</Button>
+      <Button onClick={handleEditItem} color="primary">Save</Button>
+    </DialogActions>
+  </Dialog>
+);
 
-  // Edit item in current order
-  const handleEditItem = () => {
-    if (!activeDialog.data || !editData.quantity) return;
-  
-    setCurrentPurchaseOrder(prev => {
-      const updatedItems = prev.items.map(item => {
-        if (item.id === activeDialog.data.id) {
-          return {
-            ...item,
-            productId: activeDialog.data.productId,
-            productName: activeDialog.data.productName,
-            productCode: activeDialog.data.productCode,
-            quantity: editData.quantity,
-            price: activeDialog.data.price,
-            times: editData.quantity * activeDialog.data.price
-          };
-        }
-        return item;
-      });
-  
-      return {
-        ...prev,
-        items: updatedItems
-      };
+// Update the edit item function to handle product changes
+const handleEditItem = () => {
+  if (!activeDialog.data || !editData.quantity) return;
+
+  setCurrentSellingOrder(prev => {
+    const updatedItems = prev.items.map(item => {
+      if (item.id === activeDialog.data.id) {
+        return {
+          ...item,
+          productId: activeDialog.data.productId,
+          productName: activeDialog.data.productName,
+          productCode: activeDialog.data.productCode,
+          quantity: editData.quantity,
+          price: activeDialog.data.price,
+          times: editData.quantity * activeDialog.data.price
+        };
+      }
+      return item;
     });
-  
-    handleDialogClose();
-    toast.success("Item updated");
-  };
+
+    return {
+      ...prev,
+      items: updatedItems
+    };
+  });
+
+  handleDialogClose();
+  toast.success("Item updated");
+};
 
   // Remove item from current order
   const handleRemoveItem = (itemId) => {
-    setCurrentPurchaseOrder(prev => ({
+    setCurrentSellingOrder(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== itemId)
     }));
@@ -422,38 +415,9 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
     toast.success("Item removed from order");
   };
 
-
-  const handleFilterChange = (field, value) => {
-    setSearchParams(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-  
-  // Add this handler to load the selected purchase
-  const handleViewPurchase = (purchase) => {
-    setCurrentPurchaseOrder({
-      receiveId: purchase.id,
-      supplierId: purchase.supplierId,
-      storeId: purchase.storeId,
-      note: `Return for purchase #${purchase.id}`,
-      date: new Date().toISOString().split('T')[0],
-      items: purchase.items.map(item => ({
-        ...item,
-        id: `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        quantity: item.quantity, // Use the received quantity as a starting point
-        times: item.quantity * item.price // Calculate the times value
-      })),
-      isPosted: purchase.isPosted,
-      isSaved: true,
-      id: purchase.id
-    });
-    setSearchDialogOpen(false);
-  };
-
-  // Save the entire purchase order to the server
+  // Save the entire selling order to the server
   const handleSaveOrder = async () => {
-    if (!currentPurchaseOrder.supplierId || !currentPurchaseOrder.storeId || currentPurchaseOrder.items.length === 0) {
+    if (!currentSellingOrder.customerId || !currentSellingOrder.storeId || currentSellingOrder.items.length === 0) {
       toast.error("Please fill all required fields before saving.");
       return false;
     }
@@ -461,51 +425,51 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
     try {
       setIsSaving(true);
       const dataToSend = {
-        supplierId: currentPurchaseOrder.supplierId,
-        storeId: currentPurchaseOrder.storeId,
-        note: currentPurchaseOrder.note,
-        date: currentPurchaseOrder.date,
+        customerId: currentSellingOrder.customerId,
+        storeId: currentSellingOrder.storeId,
+        note: currentSellingOrder.note,
+        date: currentSellingOrder.date,
         post: false,
-        items: currentPurchaseOrder.items.map(item => ({
+        items: currentSellingOrder.items.map(item => ({
           productId: item.productId,
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
         })),
       };
 
-      const result = await createPurchase(dataToSend).unwrap(); // Save the order
+      const result = await createSelling(dataToSend).unwrap(); // Save the order
       console.log("✅ Full API Response:", result); // Debugging
 
-      const orderId = result.purchaseOrder?.id; // Extract ID from `purchaseOrder.id`
+      const orderId = result.sellingOrder?.id; // ✅ Extract ID from `sellingOrder.id`
 
       if (!orderId) {
         toast.error("Failed to get order ID after saving. Check console.");
         return false;
       }
 
-      setCurrentPurchaseOrder(prev => ({
+      setCurrentSellingOrder(prev => ({
         ...prev,
-        id: orderId, // Save the correct ID
+        id: orderId, // ✅ Save the correct ID
         isSaved: true,
       }));
 
-      console.log("🔥 Updated currentPurchaseOrder ID:", orderId); // Debugging
+      console.log("🔥 Updated currentSellingOrder ID:", orderId); // Debugging
 
       refetch();
-      toast.success("Purchase order saved successfully!");
+      toast.success("Sales order saved successfully!");
       return true;
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to save purchase order");
+      toast.error(error?.data?.message || "Failed to save sales order");
       return false;
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Reset the current purchase order
+  // Reset the current selling order
   const handleResetOrder = () => {
-    setCurrentPurchaseOrder({
-      supplierId: "",
+    setCurrentSellingOrder({
+      customerId: "",
       storeId: "",
       note: "",
       date: new Date().toISOString().split('T')[0],
@@ -518,90 +482,113 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
     toast.info("Order has been reset");
   };
 
-  // Update the purchase order
+  // Add this handler to load the selected selling order
+const handleViewSelling = (selling) => {
+  const storeId = selling.sellingProduct?.[0]?.transaction?.fromId || "";
+  setCurrentSellingOrder({
+    id: selling.id,
+    customerId: selling.customerId,
+    storeId: storeId,
+    note: selling.note || '',
+    date: selling.date,
+    items: selling.items || [],
+    isPosted: selling.isPosted,
+    isSaved: true
+  });
+  setSearchDialogOpen(false);
+};
+
+  // Update the selling order
   const handleUpdateOrder = async () => {
-    if (!currentPurchaseOrder.id) {
+    if (!currentSellingOrder.id) {
       toast.error("Please save the order first before updating.");
       return;
     }
 
     try {
       const dataToSend = {
-        headerId: currentPurchaseOrder.id,
-        supplierId: currentPurchaseOrder.supplierId,
-        storeId: currentPurchaseOrder.storeId,
-        note: currentPurchaseOrder.note,
-        date: currentPurchaseOrder.date,
-        items: currentPurchaseOrder.items.map(item => ({
+        headerId: currentSellingOrder.id,
+        customerId: currentSellingOrder.customerId,
+        storeId: currentSellingOrder.storeId,
+        note: currentSellingOrder.note,
+        date: currentSellingOrder.date,
+        items: currentSellingOrder.items.map(item => ({
           productId: item.productId,
-          quantity: Number(item.quantity),
+          quantity: Number(item.quantity), // ✅ Convert quantity to number
           price: Number(item.price),
         })),
       };
 
-      await updatePurchase(dataToSend).unwrap();
+      await updateSelling(dataToSend).unwrap();
       refetch();
-      toast.success("Purchase order updated successfully!");
+      toast.success("Sales order updated successfully!");
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to update purchase order");
+      toast.error(error?.data?.message || "Failed to update sales order");
     }
   };
 
-  // Delete the purchase order
+  const handleFilterChange = (field, value) => {
+    console.log(`Main component setting ${field} to:`, value);
+    setSearchParams(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Delete the selling order
   const handleDeleteOrder = async () => {
-    if (!currentPurchaseOrder.id) {
+    if (!currentSellingOrder.id) {
       toast.error("Cannot delete. Save the order first.");
       return;
     }
 
     try {
-      await deletePurchase(currentPurchaseOrder.id).unwrap();
+      await deleteSelling(currentSellingOrder.id).unwrap();
       handleResetOrder(); // Reset form after deleting
       refetch();
-      toast.success("Purchase order deleted successfully!");
+      toast.success("Sales order deleted successfully!");
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to delete purchase order");
+      toast.error(error?.data?.message || "Failed to delete sales order");
     }
   };
-  
 
-  // Post the purchase order
+  // Post the selling order
   const handlePostOrder = async () => {
-    if (!currentPurchaseOrder.id) {
+    if (!currentSellingOrder.id) {
       toast.error("Please save the order before posting.");
       return;
     }
 
     try {
-      await togglePostPurchase(currentPurchaseOrder.id).unwrap();
-      setCurrentPurchaseOrder(prev => ({ ...prev, isPosted: true }));
+      await togglePostSelling(currentSellingOrder.id).unwrap();
+      setCurrentSellingOrder(prev => ({ ...prev, isPosted: true }));
       refetch();
-      toast.success("Purchase order posted successfully!");
+      toast.success("Sales order posted successfully!");
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to post purchase order");
+      toast.error(error?.data?.message || "Failed to post sales order");
     }
   };
 
-  // Unpost the purchase order
+  // Unpost the selling order
   const handleUnpostOrder = async () => {
-    if (!currentPurchaseOrder.id) {
+    if (!currentSellingOrder.id) {
       toast.error("No order to unpost.");
       return;
     }
 
     try {
-      await togglePostPurchase(currentPurchaseOrder.id).unwrap();
-      setCurrentPurchaseOrder(prev => ({ ...prev, isPosted: false }));
+      await togglePostSelling(currentSellingOrder.id).unwrap();
+      setCurrentSellingOrder(prev => ({ ...prev, isPosted: false }));
       refetch();
-      toast.success("Purchase order unposted successfully!");
+      toast.success("Sales order unposted successfully!");
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to unpost purchase order");
+      toast.error(error?.data?.message || "Failed to unpost sales order");
     }
   };
 
+
   // Search functionality
-  const handleSearchClick = () => setSearchDialogOpen(true);
-  //const handleSearchClick = () => setOpenSearchDialog(true);
+  const handleSearchClick = () => setOpenSearchDialog(true);
 
   const handleSearchSubmit = () => {
     refetch();
@@ -609,17 +596,17 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
   };
 
   const handleRefreshClick = () => {
-    setSearchParams({ id: "", storeId: "", supplierId: "" });
+    setSearchParams({ id: "", storeId: "", customerId: "" });
     refetch();
   };
 
   // Pagination
   const handleNextPage = () => {
-    if (currentPage < (purchaseData?.totalPages || 1)) {
+    if (currentPage < (sellingData?.totalPages || 1)) {
       setCurrentPage(prev => prev + 1);
     }
   };
-  
+
   const handlePrevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
@@ -628,15 +615,10 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
 
   // Load server data when available
   useEffect(() => {
-    if (!isFetching && purchaseData?.purchases) {
-      setServerData(purchaseData.purchases);
-      
-      // Ensure currentPage is within bounds
-      if (currentPage > (purchaseData.totalPages || 1)) {
-        setCurrentPage(1);
-      }
+    if (!isFetching && sellingData?.sellings) {
+      setServerData(sellingData.sellings);
     }
-  }, [isFetching, purchaseData, currentPage]);
+  }, [isFetching, sellingData]);
 
   if (isLoading) {
     return (
@@ -648,14 +630,14 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
 
   // Custom operations buttons rendering based on order state
   const renderOperationsButtons = () => {
-    if (!currentPurchaseOrder.isSaved) {
+    if (!currentSellingOrder.isSaved) {
       return (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', my: 2 }}>
           <Button
             variant="contained"
             color="primary"
             onClick={handleSaveOrder}
-            disabled={isSaving || !currentPurchaseOrder.supplierId || !currentPurchaseOrder.storeId || currentPurchaseOrder.items.length === 0}
+            disabled={isSaving || !currentSellingOrder.customerId || !currentSellingOrder.storeId || currentSellingOrder.items.length === 0}
             sx={{ minWidth: 120 }}
           >
             {isSaving ? <CircularProgress size={24} color="inherit" /> : "Save Order"}
@@ -725,45 +707,40 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
             onUnpostClick={handleUnpostOrder}
             onDeleteClick={handleDeleteOrder}
             onUpdateClick={handleUpdateOrder}
-            showActionButtons={currentPurchaseOrder.isSaved} // Pass if order is saved
-            isPosted={currentPurchaseOrder.isPosted} // Pass the posted status
+            showActionButtons={currentSellingOrder.isSaved} // Pass if order is saved
+            isPosted={currentSellingOrder.isPosted} // Pass the posted status
           />
 
-          {/* Purchase Form */}
+          {/* Selling Form */}
           <Paper sx={{ p: 3, mb: 3, mt: 2, backgroundColor: 'white', boxShadow: 'none' }}>
             <Grid container spacing={2}>
-              {/* Supplier Field */}
+              {/* Customer Field */}
               <Grid item xs={12} md={4}>
-  <Autocomplete
-    options={suppliersData.suppliers || []}
-    getOptionLabel={(option) => option.fullName}
-    value={suppliersData.suppliers?.find(s => s.id === currentPurchaseOrder.supplierId) || null}
-    onChange={(_, newValue) => setCurrentPurchaseOrder(prev => ({ 
-      ...prev, 
-      supplierId: newValue ? newValue.id : "" 
-    }))}
-    disabled={isLoadingSuppliers || currentPurchaseOrder.isPosted || isSaving}
-    renderInput={(params) => (
-      <TextField
-        {...params}
-        label="Supplier"
-        sx={{ height: '56px' }}
-      />
-    )}
-  />
-</Grid>
+                <TextField
+                  fullWidth
+                  label="Customer ID"
+                  type="number" // Set type to number
+                  value={currentSellingOrder.customerId}
+                  onChange={(e) => setCurrentSellingOrder(prev => ({
+                    ...prev,
+                    customerId: e.target.value ? parseInt(e.target.value, 10) : ""
+                  }))}
+                  disabled={currentSellingOrder.isPosted || isSaving}
+                  sx={{ '& .MuiInputBase-root': { height: '56px' } }}
+                />
+              </Grid>
 
-              {/* Store Field */}
+{/* Store Field */}
               <Grid item xs={12} md={4}>
   <Autocomplete
     options={storesData.stores || []}
     getOptionLabel={(option) => option.name}
-    value={storesData.stores?.find(s => s.id === currentPurchaseOrder.storeId) || null}
-    onChange={(_, newValue) => setCurrentPurchaseOrder(prev => ({ 
+    value={storesData.stores?.find(s => s.id === currentSellingOrder.storeId) || null}
+    onChange={(_, newValue) => setCurrentSellingOrder(prev => ({ 
       ...prev, 
       storeId: newValue ? newValue.id : "" 
     }))}
-    disabled={isLoadingStores || currentPurchaseOrder.isPosted || isSaving}
+    disabled={isLoadingStores || currentSellingOrder.isPosted || isSaving}
     renderInput={(params) => (
       <TextField
         {...params}
@@ -779,9 +756,9 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                 <TextField
                   fullWidth
                   label="Note"
-                  value={currentPurchaseOrder.note}
-                  onChange={(e) => setCurrentPurchaseOrder(prev => ({ ...prev, note: e.target.value }))}
-                  disabled={currentPurchaseOrder.isPosted || isSaving}
+                  value={currentSellingOrder.note}
+                  onChange={(e) => setCurrentSellingOrder(prev => ({ ...prev, note: e.target.value }))}
+                  disabled={currentSellingOrder.isPosted || isSaving}
                   sx={{ '& .MuiInputBase-root': { height: '56px' } }}
                 />
               </Grid>
@@ -792,10 +769,10 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                   name="date"
                   label="Date"
                   type="date"
-                  value={currentPurchaseOrder.date}
-                  onChange={(e) => setCurrentPurchaseOrder(prev => ({ ...prev, date: e.target.value }))}
+                  value={currentSellingOrder.date}
+                  onChange={(e) => setCurrentSellingOrder(prev => ({ ...prev, date: e.target.value }))}
                   InputLabelProps={{ shrink: true }}
-                  disabled={currentPurchaseOrder.isPosted || isSaving}
+                  disabled={currentSellingOrder.isPosted || isSaving}
                   sx={{ '& .MuiInputBase-root': { height: '56px' } }}
                 />
               </Grid>
@@ -809,7 +786,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
               color="primary"
               startIcon={<FaPlus />}
               onClick={handleOpenItemDialog}
-              disabled={currentPurchaseOrder.isPosted || isSaving}
+              disabled={currentSellingOrder.isPosted || isSaving}
             >
               Add Items
             </Button>
@@ -823,7 +800,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                   <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                     {columns.map((col) => (
                       <TableCell key={col} sx={styles.headerCell}>
-                        {col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
+                        {col === 'times' ? 'Total' : col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
                       </TableCell>
                     ))}
                     <TableCell sx={styles.headerCell}>Edit</TableCell>
@@ -831,8 +808,8 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {currentPurchaseOrder.items.length > 0 ? (
-                    currentPurchaseOrder.items.map((item) => (
+                  {currentSellingOrder.items.length > 0 ? (
+                    currentSellingOrder.items.map((item) => (
                       <TableRow key={item.id} sx={styles.tableRow}>
                         {columns.map((col) => (
                           <TableCell key={col} sx={styles.cell}>
@@ -843,7 +820,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                           <IconButton
                             color="primary"
                             onClick={() => handleDialogOpen('edit', item)}
-                            disabled={currentPurchaseOrder.isPosted || isSaving}
+                            disabled={currentSellingOrder.isPosted || isSaving}
                             sx={styles.iconButton}
                           >
                             <FaEdit />
@@ -853,7 +830,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                           <IconButton
                             color="error"
                             onClick={() => handleDialogOpen('delete', item)}
-                            disabled={currentPurchaseOrder.isPosted || isSaving}
+                            disabled={currentSellingOrder.isPosted || isSaving}
                             sx={styles.iconButton}
                           >
                             <FaTrash />
@@ -873,10 +850,10 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
             </TableContainer>
 
             {/* Order Summary */}
-            {currentPurchaseOrder.items.length > 0 && (
+            {currentSellingOrder.items.length > 0 && (
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Typography variant="h6">
-                  Total: {currentPurchaseOrder.items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}
+                  Total: {currentSellingOrder.items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}
                 </Typography>
               </Box>
             )}
@@ -904,7 +881,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
               {/* Table of previous orders would go here */}
               <Pagination
                 currentPage={currentPage}
-                totalPages={purchaseData?.totalPages || 1}
+                totalPages={sellingData?.totalPages || 1}
                 onNext={handleNextPage}
                 onPrev={handlePrevPage}
               />
@@ -916,29 +893,29 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
 
       {/* Multi-Item Dialog */}
       <Dialog open={openItemDialog} onClose={handleCloseItemDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Add Purchase Items</DialogTitle>
+        <DialogTitle>Add Sales Items</DialogTitle>
         <DialogContent>
           {multipleItems.map((item, index) => (
             <Grid container spacing={2} sx={{ mt: index > 0 ? 3 : 1, pb: 2, borderBottom: index < multipleItems.length - 1 ? 1 : 0, borderColor: 'divider' }} key={index}>
               <Grid item xs={12} md={4}>
-  <Autocomplete
-    options={productsData.products || []}
-    getOptionLabel={(option) => `${option.name} (${option.code})`}
-    value={productsData.products?.find(p => p.id === item.productId) || null}
-    onChange={(_, newValue) => {
-      if (newValue) {
-        handleMultipleProductChange(index, newValue.id);
-      }
-    }}
-    disabled={isLoadingProducts || currentPurchaseOrder.isPosted || isSaving}
-    renderInput={(params) => (
-      <TextField
-        {...params}
-        label="Product"
-      />
-    )}
-  />
-</Grid>
+                  <Autocomplete
+                    options={productsData.products || []}
+                    getOptionLabel={(option) => `${option.name} (${option.code})`}
+                    value={productsData.products?.find(p => p.id === item.productId) || null}
+                    onChange={(_, newValue) => {
+                      if (newValue) {
+                        handleMultipleProductChange(index, newValue.id);
+                      }
+                    }}
+                    disabled={isLoadingProducts || currentSellingOrder.isPosted || isSaving}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Product"
+                      />
+                    )}
+                  />
+              </Grid>
               <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
@@ -946,7 +923,7 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                   type="number"
                   value={item.quantity}
                   onChange={(e) => handleQuantityChange(index, e.target.value)}
-                  disabled={!item.productId || currentPurchaseOrder.isPosted || isSaving}
+                  disabled={!item.productId || currentSellingOrder.isPosted || isSaving}
                 />
               </Grid>
               <Grid item xs={12} md={3}>
@@ -959,25 +936,27 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
                   helperText="Auto-filled from product database"
                 />
               </Grid>
-               <Grid item xs={12} md={2} sx={{ display: "flex", alignItems: "center", gap: 1, mt: -5 }}>
-                {index > 0 && (
-                  <IconButton
-                    color="error"
-                    onClick={() => handleRemoveItemRow(index)}
-                    disabled={currentPurchaseOrder.isPosted || isSaving}
-                  >
-                    <FaTrash />
-                  </IconButton>
-                )}
-                <IconButton
-                  color="primary"
-                  variant="outlined"
-                  onClick={handleAddAnotherItem}
-                  disabled={currentPurchaseOrder.isPosted || isSaving}
-                >
-                  <FaPlus />
-                </IconButton>
-              </Grid>
+              
+              <Grid item xs={12} md={2} sx={{ display: "flex", alignItems: "center", gap: 1, mt: -5 }}>
+                              {index > 0 && (
+                                <IconButton
+                                  color="error"
+                                  onClick={() => handleRemoveItemRow(index)}
+                                  disabled={currentSellingOrder.isPosted || isSaving}
+                                >
+                                  <FaTrash />
+                                </IconButton>
+                              )}
+                              <IconButton
+                                color="primary"
+                                variant="outlined"
+                                onClick={handleAddAnotherItem}
+                                disabled={currentSellingOrder.isPosted || isSaving}
+                              >
+                                <FaPlus />
+                              </IconButton>
+                            </Grid> 
+
               <Grid item xs={12}>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Typography variant="body2">
@@ -994,47 +973,50 @@ const Purchasing = ({ toggleSidebar, isSidebarOpen }) => {
             onClick={handleSubmitAllItems}
             color="primary"
             variant="contained"
-            disabled={multipleItems.every(item => !item.productId || !item.quantity) || currentPurchaseOrder.isPosted || isSaving}
+            disabled={multipleItems.every(item => !item.productId || !item.quantity) || currentSellingOrder.isPosted || isSaving}
           >
             Add All Items
           </Button>
         </DialogActions>
-       </Dialog>
-{/* Search Dialog */}
-<PurchaseSearchDialog
-      open={searchDialogOpen}
-      onClose={() => setSearchDialogOpen(false)}
-      filters={searchParams}
-      onFilterChange={handlePurchaseFilterChange}
-      onViewPurchase={handleViewPurchase}
-      suppliers={suppliersData.suppliers || []}
-      stores={storesData.stores || []}
-      products={productsData.products || []}
-      fetchPurchases={async (params) => {
-        if (params.page) {
-          setCurrentPage(params.page);
-        }
-      
-        setSearchParams((prev) => ({
-          ...searchParams,
-          ...params,
-        }));
-      
-        console.log(`Fetching page data for page: ${params.page}`);
-      
-        const fetchResult = await refetch({
-          ...params,
-          page: params.page,
-        });
-      
-        return fetchResult.data;
-      }}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      
-    />
-     </Box>
-                    );
-                  };
-                  
-                  export default Purchasing;
+      </Dialog>
+
+      {/* Search Dialog */}
+
+      <SellingSearchDialog
+  open={openSearchDialog}  // Changed from OpenSearchDialog to openSearchDialog
+  onClose={() => setOpenSearchDialog(false)}
+  filters={searchParams}
+  onFilterChange={handleFilterChange}
+  onViewSelling={handleViewSelling}
+  customers={[]} // Make sure to get customers from your API
+  stores={storesData?.stores || []} // Pass stores properly
+  products={productsData?.products || []}
+  fetchSellingOrders={async (params) => {
+
+    if (params.page) {
+      setCurrentPage(params.page);
+    }
+  
+    setSearchParams((prev) => ({
+      ...searchParams,
+      ...params,
+    }));
+  
+    console.log(`Fetching page data for page: ${params.page}`);
+  
+    const fetchResult = await refetch({
+      ...params,
+      page: params.page,
+    });
+  
+    return fetchResult.data;
+  }}
+  currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+/>
+
+    </Box>
+  );
+};
+
+export default Selling;

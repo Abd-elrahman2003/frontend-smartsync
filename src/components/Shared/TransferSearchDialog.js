@@ -23,24 +23,23 @@ import {
 import { Search, X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 
-const PurchaseSearchDialog = ({
+const TransferSearchDialog = ({
   open,
   onClose,
   filters,
   onFilterChange,
-  onViewPurchase,
-  suppliers = [],
+  onViewTransfer,
   stores = [],
   products = [],
-  fetchPurchases,
+  fetchTransfers,
   currentPage = 1,
   setCurrentPage
 }) => {
   const theme = useTheme();
   const [searchFilters, setSearchFilters] = useState({
     id: "",
-    supplierId: "",
-    storeId: "",
+    storeFromId: "",
+    storeToId: "",
     dateFrom: "",
     dateTo: "",
     productId: "",
@@ -74,14 +73,13 @@ const PurchaseSearchDialog = ({
     if (open) {
       setSearchFilters({
         id: filters.id || "",
-        supplierId: filters.supplierId || "",
-        storeId: filters.storeId || "",
+        storeFromId: filters.storeFromId || "",
+        storeToId: filters.storeToId || "",
         dateFrom: filters.dateFrom || "",
         dateTo: filters.dateTo || "",
         productId: filters.productId || "",
         isPosted: filters.isPosted || "",
       });
-      // Don't reset currentPage here, as it's now controlled by parent
     }
   }, [open, filters]);
 
@@ -103,7 +101,6 @@ const PurchaseSearchDialog = ({
     }, 100);
   }, [currentPage]);
   
-
   // Handle filter changes
   const handleFilterChange = (field, value) => {
     setSearchFilters((prev) => ({
@@ -132,10 +129,10 @@ const PurchaseSearchDialog = ({
     console.log(`Fetching page data for page: ${pageNum}, rows: ${rowsLimit}`);
       
     try {
-      const response = await fetchPurchases({
+      const response = await fetchTransfers({
         id: searchFilters.id,
-        supplierId: searchFilters.supplierId,
-        storeId: searchFilters.storeId,
+        storeFromId: searchFilters.storeFromId,
+        storeToId: searchFilters.storeToId,
         dateFrom: searchFilters.dateFrom,
         dateTo: searchFilters.dateTo,
         productId: searchFilters.productId,
@@ -151,31 +148,31 @@ const PurchaseSearchDialog = ({
         
         // Check for valid response structure
         if (response && response.orders) {
-          // Enhance purchase orders with supplier and store names
-          const enhancedPurchases = response.orders.map((purchase) => {
-            const supplier = suppliers.find(s => s.id === purchase.supplierId);
-            const store = stores.find(s => s.id === purchase.storeId);
+          // Enhance transfer orders with store names
+          const enhancedTransfers = response.orders.map((transfer) => {
+            const fromStore = stores.find(s => s.id === transfer.storeFromId);
+            const toStore = stores.find(s => s.id === transfer.storeToId);
               
             return {
-              ...purchase,
-              supplierName: supplier ? supplier.fullName : 'Unknown Supplier',
-              storeName: store ? store.name : 'Unknown Store',
-              isPosted: purchase.post, // Using 'post' field for status
-              items: purchase.purchaseProduct?.map(pp => {
-                const product = products?.find(p => p.id === pp.transaction.productId);
+              ...transfer,
+              fromStoreName: fromStore ? fromStore.name : 'Unknown Store',
+              toStoreName: toStore ? toStore.name : 'Unknown Store',
+              isPosted: transfer.post, // Using 'post' field for status
+              items: transfer.transferProduct?.map(tp => {
+                const product = products?.find(p => p.id === tp.transaction.productId);
                   
                 return {
-                  productId: pp.transaction.productId,
+                  productId: tp.transaction.productId,
                   productName: product ? product.name : 'Unknown Product',
                   productCode: product ? product.code : 'N/A',
-                  quantity: pp.transaction.quantity,
-                  price: pp.transaction.price
+                  quantity: tp.transaction.quantity,
+                  price: tp.transaction.price
                 };
               }) || []
             };
           });
             
-          setFilteredResults(enhancedPurchases);
+          setFilteredResults(enhancedTransfers);
           
           // Make sure to correctly handle the total count from response
           const count = response.totalOrders || 0;
@@ -192,7 +189,7 @@ const PurchaseSearchDialog = ({
     } catch (error) {
       // Only log and update state if not aborted
       if (error.name !== 'AbortError') {
-        console.error('Error searching purchases:', error);
+        console.error('Error searching transfers:', error);
         setFilteredResults([]);
         setTotalCount(0);
         setIsLoading(false);
@@ -221,8 +218,8 @@ const PurchaseSearchDialog = ({
     
     // Clear filter values in parent component
     onFilterChange("id", "");
-    onFilterChange("supplierId", "");
-    onFilterChange("storeId", "");
+    onFilterChange("storeFromId", "");
+    onFilterChange("storeToId", "");
     onFilterChange("dateFrom", "");
     onFilterChange("dateTo", "");
     onFilterChange("productId", "");
@@ -231,8 +228,8 @@ const PurchaseSearchDialog = ({
     // Clear local search filters
     setSearchFilters({
       id: "",
-      supplierId: "",
-      storeId: "",
+      storeFromId: "",
+      storeToId: "",
       dateFrom: "",
       dateTo: "",
       productId: "",
@@ -254,8 +251,8 @@ const PurchaseSearchDialog = ({
     onClose();
   };
 
-  const handleViewClick = (purchase) => {
-    onViewPurchase(purchase);
+  const handleViewClick = (transfer) => {
+    onViewTransfer(transfer);
     onClose();
   };
 
@@ -292,17 +289,17 @@ const PurchaseSearchDialog = ({
     }
   };
 
-  // Calculate total amount for a purchase order
-  const calculateTotalAmount = (purchase) => {
-    if (!purchase.items || purchase.items.length === 0) return "0.00";
+  // Calculate total quantity for a transfer
+  const calculateTotalQuantity = (transfer) => {
+    if (!transfer.items || transfer.items.length === 0) return "0";
     
-    const total = purchase.items.reduce((sum, item) => {
+    const total = transfer.items.reduce((sum, item) => {
       const quantity = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.price) || 0;
       return sum + quantity * price;
     }, 0);
     
-    return total.toFixed(2);
+    return total.toString();
   };
   
   // Generate pagination numbers
@@ -360,7 +357,7 @@ const PurchaseSearchDialog = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Search Purchase Orders</DialogTitle>
+      <DialogTitle>Search Transfer Orders</DialogTitle>
       <DialogContent>
         {/* Search Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -368,7 +365,7 @@ const PurchaseSearchDialog = ({
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label="Order ID"
+                label="Transfer ID"
                 value={searchFilters.id}
                 onChange={(e) => handleFilterChange("id", e.target.value)}
                 variant="outlined"
@@ -377,14 +374,14 @@ const PurchaseSearchDialog = ({
             </Grid>
             <Grid item xs={12} md={4}>
               <Autocomplete
-                options={suppliers}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={suppliers.find((s) => s.id === searchFilters.supplierId) || null}
+                options={stores}
+                getOptionLabel={(option) => option.name || ""}
+                value={stores.find((s) => s.id === searchFilters.storeFromId) || null}
                 onChange={(_, newValue) =>
-                  handleFilterChange("supplierId", newValue ? newValue.id : "")
+                  handleFilterChange("storeFromId", newValue ? newValue.id : "")
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="Supplier" size="small" />
+                  <TextField {...params} label="From Store" size="small" />
                 )}
               />
             </Grid>
@@ -392,12 +389,12 @@ const PurchaseSearchDialog = ({
               <Autocomplete
                 options={stores}
                 getOptionLabel={(option) => option.name || ""}
-                value={stores.find((s) => s.id === searchFilters.storeId) || null}
+                value={stores.find((s) => s.id === searchFilters.storeToId) || null}
                 onChange={(_, newValue) =>
-                  handleFilterChange("storeId", newValue ? newValue.id : "")
+                  handleFilterChange("storeToId", newValue ? newValue.id : "")
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="Store" size="small" />
+                  <TextField {...params} label="To Store" size="small" />
                 )}
               />
             </Grid>
@@ -436,7 +433,7 @@ const PurchaseSearchDialog = ({
                 color="textSecondary" 
                 sx={{ p: 3, backgroundColor: '#f5f5f5', borderRadius: 2 }}
               >
-                No purchase orders found matching your search criteria. 
+                No transfer orders found matching your search criteria. 
                 Try adjusting your filters or search terms.
               </Typography>
             )}
@@ -448,8 +445,8 @@ const PurchaseSearchDialog = ({
                     <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                       <TableCell sx={styles.headerCell}>ID</TableCell>
                       <TableCell sx={styles.headerCell}>Date</TableCell>
-                      <TableCell sx={styles.headerCell}>Supplier</TableCell>
-                      <TableCell sx={styles.headerCell}>Store</TableCell>
+                      <TableCell sx={styles.headerCell}>From Store</TableCell>
+                      <TableCell sx={styles.headerCell}>To Store</TableCell>
                       <TableCell sx={styles.headerCell}>Items</TableCell>
                       <TableCell sx={styles.headerCell}>Total Amount</TableCell>
                       <TableCell sx={styles.headerCell}>Status</TableCell>
@@ -457,25 +454,25 @@ const PurchaseSearchDialog = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredResults.map((purchase) => (
+                    {filteredResults.map((transfer) => (
                       <TableRow
-                        key={purchase.id}
+                        key={transfer.id}
                         sx={styles.tableRow}
                         hover
                       >
-                        <TableCell sx={styles.cell}>{purchase.id}</TableCell>
-                        <TableCell sx={styles.cell}>{formatDate(purchase.date)}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.supplierName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.storeName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.items?.length || 0}</TableCell>
-                        <TableCell sx={styles.cell}>{calculateTotalAmount(purchase)}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.id}</TableCell>
+                        <TableCell sx={styles.cell}>{formatDate(transfer.date)}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.fromStoreName}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.toStoreName}</TableCell>
+                        <TableCell sx={styles.cell}>{transfer.items?.length || 0}</TableCell>
+                        <TableCell sx={styles.cell}>{calculateTotalQuantity(transfer)}</TableCell>
                         <TableCell sx={styles.cell}>
                           <Box
                             sx={{
-                              backgroundColor: purchase.isPosted
+                              backgroundColor: transfer.isPosted
                                 ? theme.palette.success.light
                                 : theme.palette.warning.light,
-                              color: purchase.isPosted
+                              color: transfer.isPosted
                                 ? theme.palette.success.contrastText
                                 : theme.palette.warning.contrastText,
                               borderRadius: "4px",
@@ -484,13 +481,13 @@ const PurchaseSearchDialog = ({
                               display: "inline-block",
                             }}
                           >
-                            {purchase.isPosted ? "Posted" : "Not Posted"}
+                            {transfer.isPosted ? "Posted" : "Not Posted"}
                           </Box>
                         </TableCell>
                         <TableCell>
                           <IconButton
                             color="primary"
-                            onClick={() => handleViewClick(purchase)}
+                            onClick={() => handleViewClick(transfer)}
                             size="small"
                           >
                             <Eye size={16} />
@@ -558,4 +555,4 @@ const PurchaseSearchDialog = ({
   );
 };
 
-export default PurchaseSearchDialog;
+export default TransferSearchDialog;

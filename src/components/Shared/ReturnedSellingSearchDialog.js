@@ -23,23 +23,24 @@ import {
 import { Search, X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 
-const PurchaseSearchDialog = ({
+const ReturnedSellingSearchDialog = ({
   open,
   onClose,
   filters,
   onFilterChange,
-  onViewPurchase,
-  suppliers = [],
+  onViewReturnSelling,
+  customers = [],
   stores = [],
   products = [],
-  fetchPurchases,
+  fetchReturnSellings,
   currentPage = 1,
   setCurrentPage
 }) => {
   const theme = useTheme();
   const [searchFilters, setSearchFilters] = useState({
     id: "",
-    supplierId: "",
+    saleId: "",
+    customerId: "",
     storeId: "",
     dateFrom: "",
     dateTo: "",
@@ -52,11 +53,8 @@ const PurchaseSearchDialog = ({
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  
-  // Abort controller for fetch cancellation
   const [abortController, setAbortController] = useState(null);
 
-  // Styles
   const styles = {
     cell: { fontSize: "0.9rem" },
     headerCell: {
@@ -69,72 +67,62 @@ const PurchaseSearchDialog = ({
     },
   };
 
-  // Reset filters when dialog opens
   useEffect(() => {
     if (open) {
       setSearchFilters({
         id: filters.id || "",
-        supplierId: filters.supplierId || "",
+        saleId: filters.saleId || "",
+        customerId: filters.customerId || "",
         storeId: filters.storeId || "",
         dateFrom: filters.dateFrom || "",
         dateTo: filters.dateTo || "",
         productId: filters.productId || "",
         isPosted: filters.isPosted || "",
       });
-      // Don't reset currentPage here, as it's now controlled by parent
     }
   }, [open, filters]);
 
-  // Calculate total pages when total count or rows per page changes
   useEffect(() => {
     if (totalCount > 0) {
       const calculatedPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
       setTotalPages(calculatedPages);
-      console.log(`Total count: ${totalCount}, rowsPerPage: ${rowsPerPage}, totalPages calculated: ${calculatedPages}`);
     } else {
       setTotalPages(1);
     }
   }, [totalCount, rowsPerPage]);
 
-  // Effect to trigger search when currentPage changes
   useEffect(() => {
     setTimeout(() => {
       fetchPageData(currentPage, rowsPerPage);
     }, 100);
   }, [currentPage]);
-  
 
-  // Handle filter changes
   const handleFilterChange = (field, value) => {
     setSearchFilters((prev) => ({
       ...prev,
       [field]: value,
     }));
     
-    // Also inform parent component of filter changes
     if (onFilterChange) {
       onFilterChange(field, value);
     }
   };
 
   const fetchPageData = async (pageNum, rowsLimit) => {
-    // Cancel any pending fetch first
     if (abortController) {
       abortController.abort();
     }
       
-    // Create a new AbortController
     const controller = new AbortController();
     setAbortController(controller);
       
     setIsLoading(true);
     
-    console.log(`Fetching page data for page: ${pageNum}, rows: ${rowsLimit}`);
-      
     try {
-      const response = await fetchPurchases({
+      const response = await fetchReturnSellings({
         id: searchFilters.id,
-        supplierId: searchFilters.supplierId,
+        saleId: searchFilters.saleId,
+        customerId: searchFilters.customerId,
         storeId: searchFilters.storeId,
         dateFrom: searchFilters.dateFrom,
         dateTo: searchFilters.dateTo,
@@ -145,54 +133,48 @@ const PurchaseSearchDialog = ({
         signal: controller.signal
       });
         
-      // Make sure we're not already aborted before processing results
       if (!controller.signal.aborted) {
-        console.log("API Response:", response);
-        
-        // Check for valid response structure
-        if (response && response.orders) {
-          // Enhance purchase orders with supplier and store names
-          const enhancedPurchases = response.orders.map((purchase) => {
-            const supplier = suppliers.find(s => s.id === purchase.supplierId);
-            const store = stores.find(s => s.id === purchase.storeId);
-              
-            return {
-              ...purchase,
-              supplierName: supplier ? supplier.fullName : 'Unknown Supplier',
-              storeName: store ? store.name : 'Unknown Store',
-              isPosted: purchase.post, // Using 'post' field for status
-              items: purchase.purchaseProduct?.map(pp => {
-                const product = products?.find(p => p.id === pp.transaction.productId);
-                  
-                return {
-                  productId: pp.transaction.productId,
-                  productName: product ? product.name : 'Unknown Product',
-                  productCode: product ? product.code : 'N/A',
-                  quantity: pp.transaction.quantity,
-                  price: pp.transaction.price
-                };
-              }) || []
-            };
-          });
-            
-          setFilteredResults(enhancedPurchases);
+        const mappedReturnSellings = response.orders.map(returnSelling => {
+          const sale = returnSelling.sale || {};
+          const customer = customers.find(c => c.id === sale.customerId);
+          const store = stores.find(s => s.id === sale.storeId);
           
-          // Make sure to correctly handle the total count from response
-          const count = response.totalOrders || 0;
-          console.log(`Setting total count to: ${count}`);
-          setTotalCount(count);
-        } else {
-          console.log("No orders found in response");
-          setFilteredResults([]);
-          setTotalCount(0);
-        }
+          return {
+            id: returnSelling.id,
+            saleId: returnSelling.saleId,
+            date: returnSelling.date,
+            customerId: sale.customerId,
+            customerName: customer ? customer.fullName : 'Unknown Customer',
+            storeId: sale.storeId,
+            storeName: store ? store.name : 'Unknown Store',
+            isPosted: returnSelling.post,
+            note: returnSelling.note || "",
+            items: (returnSelling.returnSaleProduct || []).map(item => {
+              const product = products.find(p => p.id === item.transaction.productId);
+              
+              return {
+                id: item.transactionId,
+                productId: item.transaction.productId,
+                productName: product ? product.name : "Unknown Product",
+                productCode: product ? product.code : "N/A",
+                quantity: item.transaction.quantity,
+                price: item.transaction.price,
+                times: item.transaction.quantity * item.transaction.price
+              };
+            })
+          };
+        });
+        
+        setFilteredResults(mappedReturnSellings);
+        setTotalCount(response.totalOrders || 0);
+        setTotalPages(response.totalPages || 1);
+        
         setSearched(true);
         setIsLoading(false);
       }
     } catch (error) {
-      // Only log and update state if not aborted
       if (error.name !== 'AbortError') {
-        console.error('Error searching purchases:', error);
+        console.error('Error searching return sellings:', error);
         setFilteredResults([]);
         setTotalCount(0);
         setIsLoading(false);
@@ -201,37 +183,34 @@ const PurchaseSearchDialog = ({
   };
 
   const handleSearchClick = () => {
-    console.log("Search button clicked");
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
     setSearched(true);
     fetchPageData(1, rowsPerPage);
   };
 
   const handleClearClick = () => {
-    // Cancel any pending fetch
     if (abortController) {
       abortController.abort();
       setAbortController(null);
     }
     
-    // Stop loading state if active
     if (isLoading) {
       setIsLoading(false);
     }
     
-    // Clear filter values in parent component
     onFilterChange("id", "");
-    onFilterChange("supplierId", "");
+    onFilterChange("saleId", "");
+    onFilterChange("customerId", "");
     onFilterChange("storeId", "");
     onFilterChange("dateFrom", "");
     onFilterChange("dateTo", "");
     onFilterChange("productId", "");
     onFilterChange("isPosted", "");
     
-    // Clear local search filters
     setSearchFilters({
       id: "",
-      supplierId: "",
+      saleId: "",
+      customerId: "",
       storeId: "",
       dateFrom: "",
       dateTo: "",
@@ -241,47 +220,38 @@ const PurchaseSearchDialog = ({
     
     setFilteredResults([]);
     setSearched(false);
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
   };
 
   const handleClose = () => {
-    // Cancel any pending fetch
     if (abortController) {
       abortController.abort();
       setAbortController(null);
     }
-    
     onClose();
   };
 
-  const handleViewClick = (purchase) => {
-    onViewPurchase(purchase);
+  const handleViewClick = (returnSelling) => {
+    onViewReturnSelling(returnSelling);
     onClose();
   };
 
-  // Pagination handlers
   const handleNextPage = () => {
     if (currentPage < totalPages) {
-      const nextPage = currentPage + 1;
-      console.log(`Moving to next page: ${nextPage}`);
-      setCurrentPage(nextPage);
+      setCurrentPage(currentPage + 1);
     }
   };
   
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      const prevPage = currentPage - 1;
-      console.log(`Moving to previous page: ${prevPage}`);
-      setCurrentPage(prevPage);
+      setCurrentPage(currentPage - 1);
     }
   };
   
   const handlePageClick = (pageNum) => {
-    console.log(`Directly navigating to page: ${pageNum}`);
     setCurrentPage(pageNum);
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
@@ -292,11 +262,10 @@ const PurchaseSearchDialog = ({
     }
   };
 
-  // Calculate total amount for a purchase order
-  const calculateTotalAmount = (purchase) => {
-    if (!purchase.items || purchase.items.length === 0) return "0.00";
+  const calculateTotalAmount = (returnSelling) => {
+    if (!returnSelling.items || returnSelling.items.length === 0) return "0.00";
     
-    const total = purchase.items.reduce((sum, item) => {
+    const total = returnSelling.items.reduce((sum, item) => {
       const quantity = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.price) || 0;
       return sum + quantity * price;
@@ -305,32 +274,25 @@ const PurchaseSearchDialog = ({
     return total.toFixed(2);
   };
   
-  // Generate pagination numbers
   const renderPaginationNumbers = () => {
-    // Always show first and last page, and up to 3 pages around current page
     const pageNumbers = [];
     
-    // Always add page 1
     pageNumbers.push(1);
     
-    // Add ellipsis if needed
     if (currentPage > 3) {
       pageNumbers.push('...');
     }
     
-    // Add pages around current page
     for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-      if (i !== 1 && i !== totalPages) { // Avoid duplicating first and last page
+      if (i !== 1 && i !== totalPages) {
         pageNumbers.push(i);
       }
     }
     
-    // Add ellipsis if needed
     if (currentPage < totalPages - 2) {
       pageNumbers.push('...');
     }
     
-    // Add last page if it's not the same as first page
     if (totalPages > 1) {
       pageNumbers.push(totalPages);
     }
@@ -360,35 +322,44 @@ const PurchaseSearchDialog = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Search Purchase Orders</DialogTitle>
+      <DialogTitle>Search Return Sales</DialogTitle>
       <DialogContent>
-        {/* Search Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
-                label="Order ID"
+                label="Return Sale ID"
                 value={searchFilters.id}
                 onChange={(e) => handleFilterChange("id", e.target.value)}
                 variant="outlined"
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Sale ID"
+                value={searchFilters.saleId}
+                onChange={(e) => handleFilterChange("saleId", e.target.value)}
+                variant="outlined"
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
               <Autocomplete
-                options={suppliers}
+                options={customers}
                 getOptionLabel={(option) => option.fullName || ""}
-                value={suppliers.find((s) => s.id === searchFilters.supplierId) || null}
+                value={customers.find((c) => c.id === searchFilters.customerId) || null}
                 onChange={(_, newValue) =>
-                  handleFilterChange("supplierId", newValue ? newValue.id : "")
+                  handleFilterChange("customerId", newValue ? newValue.id : "")
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="Supplier" size="small" />
+                  <TextField {...params} label="Customer" size="small" />
                 )}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <Autocomplete
                 options={stores}
                 getOptionLabel={(option) => option.name || ""}
@@ -422,7 +393,6 @@ const PurchaseSearchDialog = ({
           </Grid>
         </Paper>
 
-        {/* Results Table */}
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
             <CircularProgress />
@@ -436,7 +406,7 @@ const PurchaseSearchDialog = ({
                 color="textSecondary" 
                 sx={{ p: 3, backgroundColor: '#f5f5f5', borderRadius: 2 }}
               >
-                No purchase orders found matching your search criteria. 
+                No return sales found matching your search criteria. 
                 Try adjusting your filters or search terms.
               </Typography>
             )}
@@ -447,9 +417,10 @@ const PurchaseSearchDialog = ({
                   <TableHead>
                     <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                       <TableCell sx={styles.headerCell}>ID</TableCell>
-                      <TableCell sx={styles.headerCell}>Date</TableCell>
-                      <TableCell sx={styles.headerCell}>Supplier</TableCell>
+                      <TableCell sx={styles.headerCell}>Sale ID</TableCell>
+                      <TableCell sx={styles.headerCell}>Customer</TableCell>
                       <TableCell sx={styles.headerCell}>Store</TableCell>
+                      <TableCell sx={styles.headerCell}>Date</TableCell>
                       <TableCell sx={styles.headerCell}>Items</TableCell>
                       <TableCell sx={styles.headerCell}>Total Amount</TableCell>
                       <TableCell sx={styles.headerCell}>Status</TableCell>
@@ -457,25 +428,32 @@ const PurchaseSearchDialog = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredResults.map((purchase) => (
+                    {filteredResults.map((returnSelling) => (
                       <TableRow
-                        key={purchase.id}
+                        key={returnSelling.id}
                         sx={styles.tableRow}
                         hover
                       >
-                        <TableCell sx={styles.cell}>{purchase.id}</TableCell>
-                        <TableCell sx={styles.cell}>{formatDate(purchase.date)}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.supplierName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.storeName}</TableCell>
-                        <TableCell sx={styles.cell}>{purchase.items?.length || 0}</TableCell>
-                        <TableCell sx={styles.cell}>{calculateTotalAmount(purchase)}</TableCell>
+                        <TableCell sx={styles.cell}>{returnSelling.id}</TableCell>
+                        <TableCell sx={styles.cell}>{returnSelling.saleId}</TableCell>
+                        <TableCell sx={styles.cell}>{returnSelling.customerName}</TableCell>
+                        <TableCell sx={styles.cell}>{returnSelling.storeName}</TableCell>
+                        <TableCell sx={styles.cell}>
+                          {formatDate(returnSelling.date)}
+                        </TableCell>
+                        <TableCell sx={styles.cell}>
+                          {returnSelling.items?.length || 0}
+                        </TableCell>
+                        <TableCell sx={styles.cell}>
+                          {calculateTotalAmount(returnSelling)}
+                        </TableCell>
                         <TableCell sx={styles.cell}>
                           <Box
                             sx={{
-                              backgroundColor: purchase.isPosted
+                              backgroundColor: returnSelling.isPosted
                                 ? theme.palette.success.light
                                 : theme.palette.warning.light,
-                              color: purchase.isPosted
+                              color: returnSelling.isPosted
                                 ? theme.palette.success.contrastText
                                 : theme.palette.warning.contrastText,
                               borderRadius: "4px",
@@ -484,13 +462,13 @@ const PurchaseSearchDialog = ({
                               display: "inline-block",
                             }}
                           >
-                            {purchase.isPosted ? "Posted" : "Not Posted"}
+                            {returnSelling.isPosted ? "Posted" : "Not Posted"}
                           </Box>
                         </TableCell>
                         <TableCell>
                           <IconButton
                             color="primary"
-                            onClick={() => handleViewClick(purchase)}
+                            onClick={() => handleViewClick(returnSelling)}
                             size="small"
                           >
                             <Eye size={16} />
@@ -503,7 +481,6 @@ const PurchaseSearchDialog = ({
               </TableContainer>
             )}
 
-            {/* Enhanced Pagination */}
             {filteredResults.length > 0 && (
               <Box
                 sx={{
@@ -558,4 +535,4 @@ const PurchaseSearchDialog = ({
   );
 };
 
-export default PurchaseSearchDialog;
+export default ReturnedSellingSearchDialog;

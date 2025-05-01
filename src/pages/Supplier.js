@@ -115,12 +115,14 @@ const Supplier = ({ toggleSidebar, isSidebarOpen }) => {
       setCurrentPage(prev => prev + 1);
     }
   };
+  
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
     }
   };
+  
 
   const handleUpdateSupplier = async (updatedItem) => {
     if (!updatedItem.fullName.trim()) {
