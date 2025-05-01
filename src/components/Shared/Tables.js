@@ -24,28 +24,26 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
   const [editDialog, setEditDialog] = useState({ open: false, rowData: {} });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, rowIndex: null });
 
-  // Handle edit dialog submission
   const handleEditSubmit = () => {
     console.log(editDialog)
     onEdit(editDialog.route, editDialog.rowData);
     setEditDialog({ open: false, rowData: {} });
   };
 
-  // Handle delete confirmation
   const handleDeleteConfirm = () => {
     onDelete(deleteDialog.rowIndex);
     setDeleteDialog({ open: false, rowIndex: null });
   };
 
-  // Custom styles for larger font
   const cellStyles = {
-    fontSize: '1rem',  // Increased font size
+    fontSize: '0.9rem',  
+    padding: '14px',  
   };
 
   const headerCellStyles = {
     ...cellStyles,
     color: theme.palette.common.white,
-    fontWeight: 400,     // Makes headers bolder
+    fontWeight: 500,  
   };
 
   return (
@@ -71,17 +69,19 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
             {data.map((row, rowIndex) => (
               <TableRow 
                 key={rowIndex}
-                sx={{ '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                sx={{ 
+                  '&:hover': { backgroundColor: theme.palette.action.hover },
+                  height: '60px', 
+                }}
               >
                 {columns.map((col, colIndex) => (
                   <TableCell key={colIndex} sx={cellStyles}>
                     {row[col]}
-                    {/* Check if the column is "permission" and add lock icon */}
                     {col === "Permissions" && (
                       <IconButton
                         color="secondary"
-                        onClick={() => onLock(row)} // Trigger the lock action
-                        sx={{ marginLeft: 1, fontSize: '18px' }}
+                        onClick={() => onLock(row)}
+                        sx={{ marginLeft: 1, fontSize: '18px' }}  
                       >
                         <FaLock />
                       </IconButton>
@@ -92,7 +92,7 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
                   <IconButton
                     color="primary"
                     onClick={() => setEditDialog({ open: true, rowData: row })}
-                    sx={{ fontSize: '19px' }}
+                    sx={{ fontSize: '18px' }} 
                   >
                     <FaEdit />
                   </IconButton>
@@ -101,7 +101,7 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
                   <IconButton
                     color="error"
                     onClick={() => setDeleteDialog({ open: true, rowIndex })}
-                    sx={{ fontSize: '19px' }}
+                    sx={{ fontSize: '18px' }} 
                   >
                     <FaTrash />
                   </IconButton>
@@ -158,7 +158,7 @@ const Tables = ({ columns, data, onEdit, onDelete, onLock }) => {
       >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ fontSize: '1.2rem' }}>
+          <DialogContentText sx={{ fontSize: '1rem' }}>
             Are you sure you want to delete this item?
           </DialogContentText>
         </DialogContent>
