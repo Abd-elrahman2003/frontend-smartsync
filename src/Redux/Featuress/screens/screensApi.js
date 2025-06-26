@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 export const screensApi = createApi({
   reducerPath: 'screensApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/v1/screens',
+    baseUrl: 'http://13.60.89.143:4500/api/v1/screens',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

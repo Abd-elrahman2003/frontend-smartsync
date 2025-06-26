@@ -4,7 +4,7 @@ import { toast } from 'react-toastify'; // لإظهار رسائل التوست
 
 export const authApi = createApi({
   reducerPath: 'authApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:3000/api/v1/register' }),
+  baseQuery: fetchBaseQuery({ baseUrl: 'http://13.60.89.143:4500/api/v1/register' }),
   endpoints: (builder) => ({
     signupUser: builder.mutation({
       query: (userData) => ({
