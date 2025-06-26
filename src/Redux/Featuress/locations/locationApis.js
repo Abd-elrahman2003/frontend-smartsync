@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 export const locationsApi = createApi({
   reducerPath: 'locationApis',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/v1/location',
+    baseUrl: 'http://13.60.89.143:4500/api/v1/location',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

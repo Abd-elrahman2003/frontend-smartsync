@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 export const storeApi = createApi({
   reducerPath: 'storeApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/v1/store',
+    baseUrl: 'http://13.60.89.143:4500/api/v1/store',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

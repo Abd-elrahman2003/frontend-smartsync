@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 
 // إعداد `fetchBaseQuery` مع التوكن تلقائيًا
 const baseQuery = fetchBaseQuery({
-  baseUrl: "http://localhost:3000/api/v1/",
+  baseUrl: "http://13.60.89.143:4500/api/v1/",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("token");
     if (token) {
