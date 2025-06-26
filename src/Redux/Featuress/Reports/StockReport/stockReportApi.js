@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const stockReportApi = createApi({
   reducerPath: "stockReportApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3000/api/v1",
+    baseUrl: "http://13.60.89.143:4500/api/v1",
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.token;
       if (token) {

@@ -52,7 +52,7 @@ const SearchDialog = ({
 
       while (hasMore) {
         const response = await fetch(
-          `http://localhost:3000/api/v1/categories/${pageNum}`,
+          `http://13.60.89.143:4500/api/v1/categories/${pageNum}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
