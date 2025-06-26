@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Box,
   Dialog,
@@ -97,9 +97,9 @@ const [hasWifiData, setHasWifiData] = useState(false);
 
   // فورم داتا للواي فاي
   const [wifiFormData, setWifiFormData] = useState({
-    wallSensitivity: "",
-    maxLength: "",
-    scopes: [],
+    scope1: "",
+    scope2: "",
+    scope3: "",
   });
 
   const [formData, setFormData] = useState({
@@ -675,54 +675,109 @@ const [hasWifiData, setHasWifiData] = useState(false);
     );
   };
 
-  const handleOpenAttachmentsDialog = async (product) => {
+  const handleOpenAttachmentsDialog = useCallback(async (product) => {
     setIsLoading(true);
     setSelectedProductForAttachments(product);
-    let fetchedData = null;
-  
+    
+    // Function to open dialog after state updates
+    const openDialogWithData = (hasData, isEditing, formData) => {
+      setIsEditingAttachments(isEditing);
+      setOpenAttachmentsDialog(true);
+      setIsLoading(false);
+    };
+    
     try {
       if (product.type === "CAMERA") {
-        await refetchCameraData().unwrap(); 
-        setTimeout(() => {
-          fetchedData = cameraData; 
-          if (fetchedData) {
+        try {
+          const result = await refetchCameraData().unwrap();
+          if (result) {
             setHasCameraData(true);
-            setCameraFormData({
-              length: fetchedData.length || "",
-              angle: fetchedData.angle || "",
-              resolution: fetchedData.resolution || "",
-              storage: fetchedData.storage || "",
-              amber: fetchedData.amber || "",
-            });
-            console.log(fetchedData)
-            setOpenAttachmentsDialog(true); 
+            const newFormData = {
+              length: result.length || "",
+              angle: result.angle || "",
+              resolution: result.resolution || "",
+              storage: result.storage || "",
+              amber: result.amber || "",
+            };
+            setCameraFormData(newFormData);
+            
+            // Use setTimeout to ensure state is updated
+            setTimeout(() => openDialogWithData(true, false, newFormData), 50);
+          } else {
+            setHasCameraData(false);
+            const emptyFormData = {
+              length: "",
+              angle: "",
+              resolution: "",
+              storage: "",
+              amber: "",
+            };
+            setCameraFormData(emptyFormData);
+            
+            setTimeout(() => openDialogWithData(false, true, emptyFormData), 50);
           }
-        }, 500); 
+        } catch (error) {
+          console.log("No camera data found, starting with empty form");
+          setHasCameraData(false);
+          const emptyFormData = {
+            length: "",
+            angle: "",
+            resolution: "",
+            storage: "",
+            amber: "",
+          };
+          setCameraFormData(emptyFormData);
+          
+          setTimeout(() => openDialogWithData(false, true, emptyFormData), 50);
+        }
       } else if (product.type === "WIFI") {
-        await refetchWifiData().unwrap();
-        setTimeout(() => {
-          fetchedData = wifiData;
-          if (fetchedData) {
+        try {
+          const result = await refetchWifiData().unwrap();
+          if (result) {
             setHasWifiData(true);
-            setWifiFormData({
-              wallSensitivity: fetchedData.wallSensitivity || "",
-              maxLength: fetchedData.maxLength || "",
-              scopes: fetchedData.scopes || [],
-            });
-            setOpenAttachmentsDialog(true);
+            const newFormData = {
+              scope1: result.scope1 || "",
+              scope2: result.scope2 || "",
+              scope3: result.scope3 || "",
+            };
+            setWifiFormData(newFormData);
+            
+            setTimeout(() => openDialogWithData(true, false, newFormData), 50);
+          } else {
+            setHasWifiData(false);
+            const emptyFormData = {
+              scope1: "",
+              scope2: "",
+              scope3: "",
+            };
+            setWifiFormData(emptyFormData);
+            
+            setTimeout(() => openDialogWithData(false, true, emptyFormData), 50);
           }
-        }, 500);
+        } catch (error) {
+          console.log("No wifi data found, starting with empty form");
+          setHasWifiData(false);
+          const emptyFormData = {
+            scope1: "",
+            scope2: "",
+            scope3: "",
+          };
+          setWifiFormData(emptyFormData);
+          
+          setTimeout(() => openDialogWithData(false, true, emptyFormData), 50);
+        }
       }
     } catch (error) {
-      console.error("Error fetching attachments data:", error);
-    } finally {
+      console.error("Error in handleOpenAttachmentsDialog:", error);
+      toast.error("Failed to open attachments dialog");
       setIsLoading(false);
     }
-  };
+  }, [refetchCameraData, refetchWifiData]);
   
   
   const handleCloseAttachmentsDialog = () => {
     setOpenAttachmentsDialog(false);
+    setIsEditingAttachments(false);
 
     setCameraFormData({
       length: "",
@@ -732,13 +787,15 @@ const [hasWifiData, setHasWifiData] = useState(false);
       amber: "",
     });
     setWifiFormData({
-      wallSensitivity: "",
-      maxLength: "",
-      scopes: [],
+      scope1: "",
+      scope2: "",
+      scope3: "",
     });
 
     setShowCameraData(false);
     setShowWifiData(false);
+    setHasCameraData(false);
+    setHasWifiData(false);
   };
 
   const handleSaveAttachments = async () => {
@@ -763,12 +820,9 @@ const [hasWifiData, setHasWifiData] = useState(false);
         toast.success("Camera data saved successfully!");
       } else if (selectedProductForAttachments?.type === "WIFI") {
         const formattedWifiData = {
-          wallSensitivity: parseFloat(wifiFormData.wallSensitivity) || 0,
-          maxLength: parseFloat(wifiFormData.maxLength) || 0,
-          scopes: wifiFormData.scopes.map((scope) => ({
-            length: parseFloat(scope.length) || 0,
-            force: parseFloat(scope.force) || 0,
-          })),
+          scope1: wifiFormData.scope1 || "",
+          scope2: wifiFormData.scope2 || "",
+          scope3: wifiFormData.scope3 || "",
         };
   
         await assignWifi({
@@ -805,9 +859,9 @@ const [hasWifiData, setHasWifiData] = useState(false);
       } else if (selectedProductForAttachments?.type === "WIFI") {
         await deleteWifi(selectedProductForAttachments.id).unwrap();
         setWifiFormData({
-          wallSensitivity: "",
-          maxLength: "",
-          scopes: [],
+          scope1: "",
+          scope2: "",
+          scope3: "",
         });
         setShowWifiData(false);
         setHasWifiData(false);
@@ -834,28 +888,6 @@ const [hasWifiData, setHasWifiData] = useState(false);
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleAddScope = () => {
-    setWifiFormData((prev) => ({
-      ...prev,
-      scopes: [...prev.scopes, { length: "", force: "" }],
-    }));
-  };
-
-  const handleScopeChange = (index, field, value) => {
-    setWifiFormData((prev) => {
-      const newScopes = [...prev.scopes];
-      newScopes[index] = { ...newScopes[index], [field]: value };
-      return { ...prev, scopes: newScopes };
-    });
-  };
-
-  const handleRemoveScope = (index) => {
-    setWifiFormData((prev) => {
-      const newScopes = prev.scopes.filter((_, i) => i !== index);
-      return { ...prev, scopes: newScopes };
-    });
   };
 
   return (
@@ -1289,14 +1321,14 @@ const [hasWifiData, setHasWifiData] = useState(false);
         {selectedProductForAttachments?.type === "WIFI" && (
           <>
             {[
-              { label: "Wall Sensitivity", name: "wallSensitivity", type: "number" },
-              { label: "Max Length", name: "maxLength", type: "number" }
-            ].map(({ label, name, type }) => (
+              { label: "Scope 1", name: "scope1" },
+              { label: "Scope 2", name: "scope2" },
+              { label: "Scope 3", name: "scope3" }
+            ].map(({ label, name }) => (
               <TextField
                 key={name}
                 label={label}
                 name={name}
-                type={type}
                 value={wifiFormData[name]}
                 onChange={handleWifiFormChange}
                 fullWidth
@@ -1304,32 +1336,6 @@ const [hasWifiData, setHasWifiData] = useState(false);
                 InputProps={{ readOnly: !isEditingAttachments }}
               />
             ))}
-
-            {/* إدارة الـ Scopes */}
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Scopes</Typography>
-            {wifiFormData.scopes.map((scope, index) => (
-              <Box key={index} sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
-                <TextField
-                  label={`Scope ${index + 1} - Length`}
-                  type="number"
-                  value={scope.length}
-                  onChange={(e) => handleScopeChange(index, "length", e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !isEditingAttachments }}
-                />
-                <TextField
-                  label={`Scope ${index + 1} - Force`}
-                  type="number"
-                  value={scope.force}
-                  onChange={(e) => handleScopeChange(index, "force", e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !isEditingAttachments }}
-                />
-                {isEditingAttachments && <Button color="error" onClick={() => handleRemoveScope(index)}>Remove</Button>}
-              </Box>
-            ))}
-
-            {isEditingAttachments && <Button variant="outlined" onClick={handleAddScope}>Add Scope</Button>}
           </>
         )}
       </Box>

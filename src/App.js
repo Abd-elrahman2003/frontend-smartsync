@@ -65,7 +65,7 @@ const App = () => {
         <Route path="/store" element={<Store toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/purchase" element={<Purchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/return-purchase" element={<ReturnPurchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
-        <Route path="/return-selling" element={<ReturnSelling toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
+        <Route path="/return-selling" element={<Purchasing toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/transfers" element={<Transfers toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/adjust" element={<Adjust toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />
         <Route path="/supplier" element={<Supplier toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />} />

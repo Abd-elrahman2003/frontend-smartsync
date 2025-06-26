@@ -321,13 +321,28 @@ useEffect(() => {
   };
 
   const handleUpdateSubmit = async () => {
+    // Basic validation
+    if (!selectedUser?.["First Name"]?.trim()) {
+      toast.error("First name is required!");
+      return;
+    }
+    
+    if (!selectedUser?.["Last Name"]?.trim()) {
+      toast.error("Last name is required!");
+      return;
+    }
+    
+    if (!selectedUser?.["Email"]?.trim()) {
+      toast.error("Email is required!");
+      return;
+    }
+
     try {
       const updatePayload = {
         id: selectedUser._original.id,
-        firstName: selectedUser["First Name"],
-        lastName: selectedUser["Last Name"],
-        email: selectedUser["Email"],
-        roles: selectedUser["Roles"],
+        firstName: selectedUser["First Name"].trim(),
+        lastName: selectedUser["Last Name"].trim(),
+        email: selectedUser["Email"].trim(),
       };
 
       await updateUser(updatePayload).unwrap();
@@ -335,6 +350,7 @@ useEffect(() => {
       setOpenUpdateDialog(false);
       toast.success("User information updated successfully!");
     } catch (error) {
+      console.error("Update error:", error);
       toast.error(error?.data?.message || "Failed to update user information.");
     }
   };
@@ -732,48 +748,81 @@ const handleSubmitRoles = async () => {
       <Dialog
         open={openUpdateDialog}
         onClose={() => setOpenUpdateDialog(false)}
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle>Update User Information</DialogTitle>
+        <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
+          Update User Information
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            margin="dense"
-            label="First Name"
-            value={selectedUser?.["First Name"] || ""}
-            onChange={(e) =>
-              setSelectedUser({
-                ...selectedUser,
-                "First Name": e.target.value,
-              })
-            }
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Last Name"
-            value={selectedUser?.["Last Name"] || ""}
-            onChange={(e) =>
-              setSelectedUser({
-                ...selectedUser,
-                "Last Name": e.target.value,
-              })
-            }
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Email"
-            type="email"
-            value={selectedUser?.["Email"] || ""}
-            onChange={(e) =>
-              setSelectedUser({
-                ...selectedUser,
-                Email: e.target.value,
-              })
-            }
-          />
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="First Name"
+                value={selectedUser?.["First Name"] || ""}
+                onChange={(e) =>
+                  setSelectedUser({
+                    ...selectedUser,
+                    "First Name": e.target.value,
+                  })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Last Name"
+                value={selectedUser?.["Last Name"] || ""}
+                onChange={(e) =>
+                  setSelectedUser({
+                    ...selectedUser,
+                    "Last Name": e.target.value,
+                  })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Email"
+                type="email"
+                value={selectedUser?.["Email"] || ""}
+                onChange={(e) =>
+                  setSelectedUser({
+                    ...selectedUser,
+                    Email: e.target.value,
+                  })
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setOpenUpdateDialog(false)} color="secondary">
             Cancel
           </Button>
